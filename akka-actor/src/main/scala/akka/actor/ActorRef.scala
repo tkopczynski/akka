@@ -746,24 +746,19 @@ private[akka] final class FunctionRef(
     def unwatchWatched(watched: ActorRef): Unit =
       watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
 
-    val toUnwatch = this.synchronized {
+    val (toUnwatch, watchedBy) = this.synchronized {
       _watchedBy match {
-        case OptionVal.Some(watchedBy) ⇒
-          if (watchedBy.nonEmpty) {
-            watchedBy foreach sendTerminated(ifLocal = false)
-            watchedBy foreach sendTerminated(ifLocal = true)
-          }
-
+        case OptionVal.Some(wBy) ⇒
           val oldWatching = watching
           watching = Set.empty
 
           unsubscribeAddressTerminated()
           _watchedBy = OptionVal.None
 
-          oldWatching
+          (oldWatching, wBy)
 
         case OptionVal.None ⇒
-          Set.empty
+          (ActorCell.emptyActorRefSet, ActorCell.emptyActorRefSet)
       }
     }
 
@@ -771,6 +766,10 @@ private[akka] final class FunctionRef(
     if (toUnwatch.nonEmpty)
       toUnwatch foreach unwatchWatched
 
+    if (watchedBy.nonEmpty) {
+      watchedBy foreach sendTerminated(ifLocal = false)
+      watchedBy foreach sendTerminated(ifLocal = true)
+    }
   }
 
   private def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
