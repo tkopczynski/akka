@@ -25,6 +25,8 @@ akka.AkkaBuild.buildSettings
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
+scalafmtOnCompile := true
+
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actor, actorTests,
@@ -500,5 +502,4 @@ def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
-    .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
