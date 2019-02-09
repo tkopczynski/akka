@@ -39,7 +39,7 @@ class BehaviorBuilder[T] private (
    * @return a new behavior with the specified handling appended
    */
   def onMessage[M <: T](`type`: Class[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    withMessage(`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M]))
+    withMessage(`type`, None, (i1: ActorContext[T], msg: T) => handler.apply(i1, msg.asInstanceOf[M]))
 
   /**
    * Add a new predicated case to the message handling.
@@ -53,8 +53,8 @@ class BehaviorBuilder[T] private (
   def onMessage[M <: T](`type`: Class[M], test: Predicate[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
     withMessage(
       `type`,
-      Some((t: T) ⇒ test.test(t.asInstanceOf[M])),
-      (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])
+      Some((t: T) => test.test(t.asInstanceOf[M])),
+      (i1: ActorContext[T], msg: T) => handler.apply(i1, msg.asInstanceOf[M])
     )
 
   /**
@@ -68,7 +68,7 @@ class BehaviorBuilder[T] private (
    * @return a new behavior with the specified handling appended
    */
   def onMessageUnchecked[M <: T](`type`: Class[_ <: T], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    withMessage(`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M]))
+    withMessage(`type`, None, (i1: ActorContext[T], msg: T) => handler.apply(i1, msg.asInstanceOf[M]))
 
   /**
    * Add a new case to the message handling matching equal messages.
@@ -78,7 +78,7 @@ class BehaviorBuilder[T] private (
    * @return a new behavior with the specified handling appended
    */
   def onMessageEquals(msg: T, handler: Function[ActorContext[T], Behavior[T]]): BehaviorBuilder[T] =
-    withMessage(msg.getClass, Some(_.equals(msg)), (ctx: ActorContext[T], _: T) ⇒ handler.apply(ctx))
+    withMessage(msg.getClass, Some(_.equals(msg)), (ctx: ActorContext[T], _: T) => handler.apply(ctx))
 
   /**
    * Add a new case to the signal handling.
@@ -89,7 +89,7 @@ class BehaviorBuilder[T] private (
    * @return a new behavior with the specified handling appended
    */
   def onSignal[M <: Signal](`type`: Class[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M]))
+    withSignal(`type`, None, (ctx: ActorContext[T], signal: Signal) => handler.apply(ctx, signal.asInstanceOf[M]))
 
   /**
    * Add a new predicated case to the signal handling.
@@ -103,8 +103,8 @@ class BehaviorBuilder[T] private (
   def onSignal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
     withSignal(
       `type`,
-      Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])),
-      (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])
+      Some((t: Signal) => test.test(t.asInstanceOf[M])),
+      (ctx: ActorContext[T], signal: Signal) => handler.apply(ctx, signal.asInstanceOf[M])
     )
 
   /**
@@ -118,7 +118,7 @@ class BehaviorBuilder[T] private (
    * @return a new behavior with the specified handling appended
    */
   def onSignalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M]))
+    withSignal(`type`, None, (ctx: ActorContext[T], signal: Signal) => handler.apply(ctx, signal.asInstanceOf[M]))
 
   /**
    * Add a new case to the signal handling matching equal signals.
@@ -128,12 +128,12 @@ class BehaviorBuilder[T] private (
    * @return a new behavior with the specified handling appended
    */
   def onSignalEquals(signal: Signal, handler: Function[ActorContext[T], Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(signal.getClass, Some(_.equals(signal)), (ctx: ActorContext[T], _: Signal) ⇒ handler.apply(ctx))
+    withSignal(signal.getClass, Some(_.equals(signal)), (ctx: ActorContext[T], _: Signal) => handler.apply(ctx))
 
-  private def withMessage(`type`: Class[_ <: T], test: Option[T ⇒ Boolean], handler: (ActorContext[T], T) ⇒ Behavior[T]): BehaviorBuilder[T] =
+  private def withMessage(`type`: Class[_ <: T], test: Option[T => Boolean], handler: (ActorContext[T], T) => Behavior[T]): BehaviorBuilder[T] =
     new BehaviorBuilder[T](Case[T, T](`type`, test, handler) +: messageHandlers, signalHandlers)
 
-  private def withSignal[M <: Signal](`type`: Class[M], test: Option[Signal ⇒ Boolean], handler: (ActorContext[T], Signal) ⇒ Behavior[T]): BehaviorBuilder[T] =
+  private def withSignal[M <: Signal](`type`: Class[M], test: Option[Signal => Boolean], handler: (ActorContext[T], Signal) => Behavior[T]): BehaviorBuilder[T] =
     new BehaviorBuilder[T](messageHandlers, Case[T, Signal](`type`, test, handler) +: signalHandlers)
 }
 
@@ -142,7 +142,7 @@ object BehaviorBuilder {
 
   /** INTERNAL API */
   @InternalApi
-  private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT], test: Option[MT ⇒ Boolean], handler: (ActorContext[BT], MT) ⇒ Behavior[BT])
+  private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT], test: Option[MT => Boolean], handler: (ActorContext[BT], MT) => Behavior[BT])
 
   /**
    * Start a new behavior chain starting with this case.
@@ -256,10 +256,10 @@ private class BuiltBehavior[T](
   @tailrec
   private def receive[M](ctx: ActorContext[T], msg: M, handlers: List[Case[T, M]]): Behavior[T] =
     handlers match {
-      case Case(cls, predicate, handler) :: tail ⇒
+      case Case(cls, predicate, handler) :: tail =>
         if (cls.isAssignableFrom(msg.getClass) && (predicate.isEmpty || predicate.get.apply(msg))) handler(ctx, msg)
         else receive[M](ctx, msg, tail)
-      case _ ⇒
+      case _ =>
         unhandled[T]
     }
 

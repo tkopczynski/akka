@@ -25,11 +25,11 @@ class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 
   override def withFixture(test: NoArgTest) = {
     super.withFixture(test) match {
-      case failed: Failed ⇒
+      case failed: Failed =>
         val probe = TestProbe()(system)
         system.actorSelection("/user/" + StreamSupervisor.baseName + "*").tell(StreamSupervisor.GetChildren, probe.ref)
         val children: Seq[ActorRef] = probe.receiveWhile(2.seconds) {
-          case StreamSupervisor.Children(children) ⇒ children
+          case StreamSupervisor.Children(children) => children
         }.flatten
         println("--- Stream actors debug dump ---")
         if (children.isEmpty) println("Stream is completed. No debug information is available")
@@ -38,7 +38,7 @@ class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
           children.foreach(_ ! StreamSupervisor.PrintDebugDump)
         }
         failed
-      case other ⇒ other
+      case other => other
     }
   }
 }

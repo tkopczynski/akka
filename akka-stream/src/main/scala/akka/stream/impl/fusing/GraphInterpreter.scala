@@ -196,7 +196,7 @@ import akka.stream.Attributes.LogLevels
   val log:          LoggingAdapter,
   val logics:       Array[GraphStageLogic], // Array of stage logics
   val connections:  Array[GraphInterpreter.Connection],
-  val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) ⇒ Unit) ⇒ Unit,
+  val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) => Unit) => Unit,
   val fuzzingMode:  Boolean,
   val context:      ActorRef) {
 
@@ -214,7 +214,7 @@ import akka.stream.Attributes.LogLevels
   private[this] var runningStages = logics.length
 
   // Counts how many active connections a stage has. Once it reaches zero, the stage is automatically stopped.
-  private[this] val shutdownCounter = Array.tabulate(logics.length) { i ⇒
+  private[this] val shutdownCounter = Array.tabulate(logics.length) { i =>
     logics(i).handlers.length
   }
 
@@ -233,7 +233,7 @@ import akka.stream.Attributes.LogLevels
   private[this] var chasedPull: Connection = NoEvent
 
   private def queueStatus: String = {
-    val contents = (queueHead until queueTail).map(idx ⇒ {
+    val contents = (queueHead until queueTail).map(idx => {
       val conn = eventQueue(idx & mask)
       conn
     })
@@ -294,7 +294,7 @@ import akka.stream.Attributes.LogLevels
         logic.beforePreStart()
         logic.preStart()
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.error(e, "Error during preStart in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
           logic.failStage(e)
       }
@@ -328,7 +328,7 @@ import akka.stream.Attributes.LogLevels
   private def outLogicName(connection: Connection): String = logics(connection.outOwner.stageId).toString
 
   private def shutdownCounters: String =
-    shutdownCounter.map(x ⇒ if (x >= KeepGoingFlag) s"${x & KeepGoingMask}(KeepGoing)" else x.toString).mkString(",")
+    shutdownCounter.map(x => if (x >= KeepGoingFlag) s"${x & KeepGoingMask}(KeepGoing)" else x.toString).mkString(",")
 
   /**
    * Executes pending events until the given limit is met. If there were remaining events, isSuspended will return
@@ -350,8 +350,8 @@ import akka.stream.Attributes.LogLevels
           if (activeStage == null) throw e
           else {
             val loggingEnabled = activeStage.attributes.get[LogLevels] match {
-              case Some(levels) ⇒ levels.onFailure != LogLevels.Off
-              case None         ⇒ true
+              case Some(levels) => levels.onFailure != LogLevels.Off
+              case None         => true
             }
             if (loggingEnabled)
               log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
@@ -377,7 +377,7 @@ import akka.stream.Attributes.LogLevels
          */
         try processEvent(connection)
         catch {
-          case NonFatal(e) ⇒ reportStageError(e)
+          case NonFatal(e) => reportStageError(e)
         }
         afterStageHasRun(activeStage)
 
@@ -410,7 +410,7 @@ import akka.stream.Attributes.LogLevels
           chasedPush = NoEvent
           try processPush(connection)
           catch {
-            case NonFatal(e) ⇒ reportStageError(e)
+            case NonFatal(e) => reportStageError(e)
           }
           afterStageHasRun(activeStage)
         }
@@ -421,7 +421,7 @@ import akka.stream.Attributes.LogLevels
           chasedPull = NoEvent
           try processPull(connection)
           catch {
-            case NonFatal(e) ⇒ reportStageError(e)
+            case NonFatal(e) => reportStageError(e)
           }
           afterStageHasRun(activeStage)
         }
@@ -442,7 +442,7 @@ import akka.stream.Attributes.LogLevels
     eventsRemaining
   }
 
-  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) ⇒ Unit): Unit =
+  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) => Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
       val currentInterpreterHolder = _currentInterpreter.get()
@@ -457,7 +457,7 @@ import akka.stream.Attributes.LogLevels
             logic.onFeedbackDispatched()
           }
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             if (promise ne GraphStageLogic.NoPromise) {
               promise.failure(ex)
               logic.onFeedbackDispatched()
@@ -571,7 +571,7 @@ import akka.stream.Attributes.LogLevels
       logic.postStop()
       logic.afterPostStop()
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, s"Error during postStop in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
     }
   }
@@ -654,26 +654,26 @@ import akka.stream.Attributes.LogLevels
       builder.append("================================================================\n")
       builder.append("digraph waits {\n")
 
-      for (i ← logics.indices) {
+      for (i <- logics.indices) {
         val logic = logics(i)
         val label = logic.originalStage.getOrElse(logic).toString
         builder.append(s"""  N$i [label="$label"];""").append('\n')
       }
 
-      val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
-      for (connection ← connections if connection != null) {
+      val logicIndexes = logics.zipWithIndex.map { case (stage, idx) => stage -> idx }.toMap
+      for (connection <- connections if connection != null) {
         val inName = "N" + logicIndexes(connection.inOwner)
         val outName = "N" + logicIndexes(connection.outOwner)
 
         builder.append(s"  $inName -> $outName ")
         connection.portState match {
-          case InReady ⇒
+          case InReady =>
             builder.append("[label=shouldPull, color=blue];")
-          case OutReady ⇒
+          case OutReady =>
             builder.append(s"[label=shouldPush, color=red];")
-          case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
+          case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) =>
             builder.append("[style=dotted, label=closed, dir=both];")
-          case _ ⇒
+          case _ =>
         }
         builder.append("\n")
       }
@@ -682,7 +682,7 @@ import akka.stream.Attributes.LogLevels
       builder.append(s"// $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
       builder.toString()
     } catch {
-      case _: NoSuchElementException ⇒ "Not all logics has a stage listed, cannot create graph"
+      case _: NoSuchElementException => "Not all logics has a stage listed, cannot create graph"
     }
   }
 }

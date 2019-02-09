@@ -21,14 +21,14 @@ object StreamTestKit {
    * This assertion is useful to check that all of the stages have
    * terminated successfully.
    */
-  def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: Materializer): T =
+  def assertAllStagesStopped[T](block: => T)(implicit materializer: Materializer): T =
     materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
+      case impl: PhasedFusingActorMaterializer =>
         stopAllChildren(impl.system, impl.supervisor)
         val result = block
         assertNoChildren(impl.system, impl.supervisor)
         result
-      case _ ⇒ block
+      case _ => block
     }
 
   /** INTERNAL API */
@@ -51,7 +51,7 @@ object StreamTestKit {
           s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
       }
       catch {
-        case ex: Throwable ⇒
+        case ex: Throwable =>
           children.foreach(_ ! StreamSupervisor.PrintDebugDump)
           throw ex
       }
