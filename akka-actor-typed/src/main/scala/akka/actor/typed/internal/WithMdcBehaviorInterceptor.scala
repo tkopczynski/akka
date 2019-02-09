@@ -5,7 +5,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ TypedActorContext, Behavior, BehaviorInterceptor, Signal }
+import akka.actor.typed.{Behavior, BehaviorInterceptor, Signal, TypedActorContext}
 import akka.annotation.InternalApi
 
 import scala.collection.immutable.HashMap
@@ -16,10 +16,9 @@ import scala.collection.immutable.HashMap
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
   val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
 
-  def apply[T](
-    staticMdc:     Map[String, Any],
-    mdcForMessage: T => Map[String, Any],
-    behavior:      Behavior[T]): Behavior[T] = {
+  def apply[T](staticMdc: Map[String, Any],
+               mdcForMessage: T => Map[String, Any],
+               behavior: Behavior[T]): Behavior[T] = {
 
     val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
     BehaviorImpl.intercept(interceptor)(behavior)
@@ -32,9 +31,9 @@ import scala.collection.immutable.HashMap
  *
  * INTERNAL API
  */
-@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
-  staticMdc:     Map[String, Any],
-  mdcForMessage: T => Map[String, Any]) extends BehaviorInterceptor[T, T] {
+@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (staticMdc: Map[String, Any],
+                                                                              mdcForMessage: T => Map[String, Any])
+    extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
 
@@ -69,7 +68,7 @@ import scala.collection.immutable.HashMap
   // in the normal case, a new withMDC replaces the previous one
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     case _: WithMdcBehaviorInterceptor[_] => true
-    case _                                => false
+    case _ => false
   }
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {

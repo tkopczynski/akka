@@ -5,11 +5,11 @@
 package akka.dispatch
 
 import java.util
-import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 import com.typesafe.config._
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
  * INTERNAL API
@@ -45,13 +45,13 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   private val (config: Config, entryMap: ConcurrentHashMap[String, PathEntry]) = _config match {
     case cc: CachingConfig => (cc.config, cc.entryMap)
-    case _                 => (_config, new ConcurrentHashMap[String, PathEntry])
+    case _ => (_config, new ConcurrentHashMap[String, PathEntry])
   }
 
   private def getPathEntry(path: String): PathEntry = entryMap.get(path) match {
     case null =>
       val ne = Try { config.hasPath(path) } match {
-        case Failure(_)     => invalidPathEntry
+        case Failure(_) => invalidPathEntry
         case Success(false) => nonExistingPathEntry
         case _ =>
           Try { config.getValue(path) } match {
@@ -67,7 +67,7 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
       entryMap.putIfAbsent(path, ne) match {
         case null => ne
-        case e    => e
+        case e => e
       }
 
     case e => e
@@ -197,9 +197,9 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   def resolveWith(source: Config) = config.resolveWith(source)
 
-  override def getEnumList[T <: Enum[T]](enumClass: Class[T], path: String): util.List[T] = config.getEnumList(enumClass, path)
+  override def getEnumList[T <: Enum[T]](enumClass: Class[T], path: String): util.List[T] =
+    config.getEnumList(enumClass, path)
 
   override def getEnum[T <: Enum[T]](enumClass: Class[T], path: String): T = config.getEnum(enumClass, path)
 
 }
-

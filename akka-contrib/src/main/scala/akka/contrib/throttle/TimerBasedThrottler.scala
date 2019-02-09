@@ -4,9 +4,9 @@
 
 package akka.contrib.throttle
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.collection.immutable.{ Queue => Q }
-import akka.actor.{ ActorRef, Actor, FSM }
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.collection.immutable.{Queue => Q}
+import akka.actor.{Actor, ActorRef, FSM}
 import Throttler._
 import TimerBasedThrottler._
 import java.util.concurrent.TimeUnit
@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit
  */
 @deprecated("Use streams, see migration guide", "2.5.0")
 object Throttler {
+
   /**
    * A rate used for throttling.
    *
@@ -40,6 +41,7 @@ object Throttler {
    * @see [[akka.contrib.throttle.Throttler]]
    */
   final case class Rate(val numberOfCalls: Int, val duration: FiniteDuration) {
+
     /**
      * The duration in milliseconds.
      */
@@ -60,6 +62,7 @@ object Throttler {
    *  as well as any messages received in the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
    */
   final case class SetTarget(target: Option[ActorRef]) {
+
     /**
      * Java API:
      * @param target if `target` is `null`, the throttler will stop delivering messages and the messages already received
@@ -110,10 +113,7 @@ private[throttle] object TimerBasedThrottler {
   final case class Message(message: Any, sender: ActorRef)
 
   // The data of the FSM
-  final case class Data(
-    target:                Option[ActorRef],
-    callsLeftInThisPeriod: Int,
-    queue:                 Q[Message])
+  final case class Data(target: Option[ActorRef], callsLeftInThisPeriod: Int, queue: Q[Message])
 }
 
 /**

@@ -18,6 +18,7 @@ import akka.actor.NoSerializationVerificationNeeded
  * The implementation must be thread safe.
  */
 trait RoutingLogic extends NoSerializationVerificationNeeded {
+
   /**
    * Pick the destination for a given message. Normally it picks one of the
    * passed `routees`, but in the end it is up to the implementation to
@@ -114,7 +115,7 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
   def route(message: Any, sender: ActorRef): Unit =
     message match {
       case akka.routing.Broadcast(msg) => SeveralRoutees(routees).send(msg, sender)
-      case msg                         => send(logic.select(msg, routees), message, sender)
+      case msg => send(logic.select(msg, routees), message, sender)
     }
 
   private def send(routee: Routee, msg: Any, sender: ActorRef): Unit = {
@@ -126,7 +127,7 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
 
   private def unwrap(msg: Any): Any = msg match {
     case env: RouterEnvelope => env.message
-    case _                   => msg
+    case _ => msg
   }
 
   /**
@@ -185,4 +186,3 @@ final case class Broadcast(message: Any) extends RouterEnvelope
 trait RouterEnvelope {
   def message: Any
 }
-

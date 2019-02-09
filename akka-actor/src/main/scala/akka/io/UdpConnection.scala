@@ -11,21 +11,22 @@ import java.nio.channels.SelectionKey._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.{ ByteString, unused }
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
+import akka.util.{unused, ByteString}
 import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
 
 /**
  * INTERNAL API
  */
-private[io] class UdpConnection(
-  udpConn:         UdpConnectedExt,
-  channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  connect:         Connect)
-  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[io] class UdpConnection(udpConn: UdpConnectedExt,
+                                channelRegistry: ChannelRegistry,
+                                commander: ActorRef,
+                                connect: Connect)
+    extends Actor
+    with ActorLogging
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import connect._
   import udpConn._
@@ -72,15 +73,15 @@ private[io] class UdpConnection(
     case registration: ChannelRegistration =>
       options.foreach {
         case v2: Inet.SocketOptionV2 => v2.afterConnect(channel.socket)
-        case _                       =>
+        case _ =>
       }
       commander ! Connected
       context.become(connected(registration), discardOld = true)
   }
 
   def connected(registration: ChannelRegistration): Receive = {
-    case SuspendReading  => registration.disableInterest(OP_READ)
-    case ResumeReading   => registration.enableInterest(OP_READ)
+    case SuspendReading => registration.disableInterest(OP_READ)
+    case ResumeReading => registration.enableInterest(OP_READ)
     case ChannelReadable => doRead(registration, handler)
 
     case Disconnect =>
@@ -117,7 +118,8 @@ private[io] class UdpConnection(
       }
     }
     val buffer = bufferPool.acquire()
-    try innerRead(BatchReceiveLimit, buffer) finally {
+    try innerRead(BatchReceiveLimit, buffer)
+    finally {
       registration.enableInterest(OP_READ)
       bufferPool.release(buffer)
     }
@@ -156,9 +158,10 @@ private[io] class UdpConnection(
       thunk
     } catch {
       case NonFatal(e) =>
-        log.debug(
-          "Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
-          remoteAddress, localAddress.getOrElse("undefined"), e)
+        log.debug("Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
+                  remoteAddress,
+                  localAddress.getOrElse("undefined"),
+                  e)
         commander ! CommandFailed(connect)
         context.stop(self)
     }

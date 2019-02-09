@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 object SpawnProtocol {
 
   object Spawn {
+
     /**
      * Special factory to make using Spawn with ask easier
      */
@@ -36,7 +37,7 @@ object SpawnProtocol {
    * `InvalidActorNameException`, but it's better to use unique names to begin with.
    */
   final case class Spawn[T](behavior: Behavior[T], name: String, props: Props, replyTo: ActorRef[ActorRef[T]])
-    extends SpawnProtocol
+      extends SpawnProtocol
 
   /**
    * Behavior implementing the [[SpawnProtocol]].
@@ -54,7 +55,7 @@ object SpawnProtocol {
                 val nameSuggestion = if (c == 0) name else s"$name-$c"
                 ctx.child(nameSuggestion) match {
                   case Some(_) => spawnWithUniqueName(c + 1) // already taken, try next
-                  case None    => ctx.spawn(bhvr, nameSuggestion, props)
+                  case None => ctx.spawn(bhvr, nameSuggestion, props)
                 }
               }
 

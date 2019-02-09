@@ -18,8 +18,8 @@ import scala.collection.immutable
  */
 @InternalApi
 private[akka] final class TestInboxImpl[T](path: ActorPath)
-  extends akka.actor.testkit.typed.javadsl.TestInbox[T]
-  with akka.actor.testkit.typed.scaladsl.TestInbox[T] {
+    extends akka.actor.testkit.typed.javadsl.TestInbox[T]
+    with akka.actor.testkit.typed.scaladsl.TestInbox[T] {
 
   private val q = new ConcurrentLinkedQueue[T]
 
@@ -28,12 +28,12 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
   override def receiveMessage(): T = q.poll() match {
     case null => throw new NoSuchElementException(s"polling on an empty inbox: $path")
-    case x    => x
+    case x => x
   }
 
   override def expectMessage(expectedMessage: T): TestInboxImpl[T] = {
     q.poll() match {
-      case null    => assert(assertion = false, s"expected message: $expectedMessage but no messages were received")
+      case null => assert(assertion = false, s"expected message: $expectedMessage but no messages were received")
       case message => assert(message == expectedMessage, s"expected: $expectedMessage but received $message")
     }
     this
@@ -42,7 +42,7 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
   override protected def internalReceiveAll(): immutable.Seq[T] = {
     @tailrec def rec(acc: List[T]): List[T] = q.poll() match {
       case null => acc.reverse
-      case x    => rec(x :: acc)
+      case x => rec(x :: acc)
     }
 
     rec(Nil)

@@ -13,13 +13,14 @@ import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
+import akka.util.Helpers.{toRootLowerCase, ConfigOps, Requiring}
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
 object ClusterSettings {
   type DataCenter = String
+
   /**
    * INTERNAL API.
    */
@@ -64,10 +65,12 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
 
   object MultiDataCenter {
-    val CrossDcConnections: Int = cc.getInt("multi-data-center.cross-data-center-connections")
+    val CrossDcConnections: Int = cc
+      .getInt("multi-data-center.cross-data-center-connections")
       .requiring(_ > 0, "cross-data-center-connections must be > 0")
 
-    val CrossDcGossipProbability: Double = cc.getDouble("multi-data-center.cross-data-center-gossip-probability")
+    val CrossDcGossipProbability: Double = cc
+      .getDouble("multi-data-center.cross-data-center-gossip-probability")
       .requiring(d => d >= 0.0D && d <= 1.0D, "cross-data-center-gossip-probability must be >= 0.0 and <= 1.0")
 
     val CrossDcFailureDetectorSettings: CrossDcFailureDetectorSettings =
@@ -81,14 +84,14 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "retry-unsuccessful-join-after"
     toRootLowerCase(cc.getString(key)) match {
       case "off" => Duration.Undefined
-      case _     => cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case _ => cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
   val ShutdownAfterUnsuccessfulJoinSeedNodes: Duration = {
     val key = "shutdown-after-unsuccessful-join-seed-nodes"
     toRootLowerCase(cc.getString(key)) match {
       case "off" => Duration.Undefined
-      case _     => cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case _ => cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
@@ -102,7 +105,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "publish-stats-interval"
     toRootLowerCase(cc.getString(key)) match {
       case "off" => Duration.Undefined
-      case _     => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _ => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -119,7 +122,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "auto-down-unreachable-after"
     toRootLowerCase(cc.getString(key)) match {
       case "off" => Duration.Undefined
-      case _     => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _ => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -133,7 +136,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "down-removal-margin"
     toRootLowerCase(cc.getString(key)) match {
       case "off" => Duration.Zero
-      case _     => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _ => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -145,16 +148,17 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
 
   val QuarantineRemovedNodeAfter: FiniteDuration =
-    cc.getMillisDuration("quarantine-removed-node-after") requiring (_ > Duration.Zero, "quarantine-removed-node-after must be > 0")
+  cc.getMillisDuration("quarantine-removed-node-after") requiring (_ > Duration.Zero, "quarantine-removed-node-after must be > 0")
 
   val AllowWeaklyUpMembers: Boolean = cc.getBoolean("allow-weakly-up-members")
 
   val SelfDataCenter: DataCenter = cc.getString("multi-data-center.self-data-center")
 
   val Roles: Set[String] = {
-    val configuredRoles = immutableSeq(cc.getStringList("roles")).toSet requiring (
-      _.forall(!_.startsWith(DcRolePrefix)),
-      s"Roles must not start with '$DcRolePrefix' as that is reserved for the cluster self-data-center setting")
+    val configuredRoles = immutableSeq(cc.getStringList("roles")).toSet requiring (_.forall(
+      !_.startsWith(DcRolePrefix)
+    ),
+    s"Roles must not start with '$DcRolePrefix' as that is reserved for the cluster self-data-center setting")
 
     configuredRoles + s"$DcRolePrefix$SelfDataCenter"
   }
@@ -164,9 +168,13 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   } requiring (_ > 0, "min-nr-of-members must be > 0")
   val MinNrOfMembersOfRole: Map[String, Int] = {
     import scala.collection.JavaConverters._
-    cc.getConfig("role").root.asScala.collect {
-      case (key, value: ConfigObject) => key -> value.toConfig.getInt("min-nr-of-members")
-    }.toMap
+    cc.getConfig("role")
+      .root
+      .asScala
+      .collect {
+        case (key, value: ConfigObject) => key -> value.toConfig.getInt("min-nr-of-members")
+      }
+      .toMap
   }
   val RunCoordinatedShutdownWhenDown: Boolean = cc.getBoolean("run-coordinated-shutdown-when-down")
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
@@ -184,8 +192,12 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val ConfigCompatCheckers: Set[String] = {
     import scala.collection.JavaConverters._
     cc.getConfig("configuration-compatibility-check.checkers")
-      .root.unwrapped.values().asScala
-      .map(_.toString).toSet
+      .root
+      .unwrapped
+      .values()
+      .asScala
+      .map(_.toString)
+      .toSet
   }
 
   val SensitiveConfigPaths = {
@@ -193,7 +205,10 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
     val sensitiveKeys =
       cc.getConfig("configuration-compatibility-check.sensitive-config-paths")
-        .root.unwrapped.values().asScala
+        .root
+        .unwrapped
+        .values()
+        .asScala
         .flatMap(_.asInstanceOf[java.util.List[String]].asScala)
 
     sensitiveKeys.toSet
@@ -205,4 +220,3 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
 
 }
-

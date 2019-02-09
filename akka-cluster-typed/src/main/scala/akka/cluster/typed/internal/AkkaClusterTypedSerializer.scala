@@ -9,7 +9,7 @@ import java.io.NotSerializableException
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorRefResolver
 import akka.annotation.InternalApi
-import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
+import akka.serialization.{BaseSerializer, SerializerWithStringManifest}
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.internal.protobuf.ClusterMessages
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
@@ -19,7 +19,8 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
  */
 @InternalApi
 private[akka] final class AkkaClusterTypedSerializer(override val system: ExtendedActorSystem)
-  extends SerializerWithStringManifest with BaseSerializer {
+    extends SerializerWithStringManifest
+    with BaseSerializer {
 
   // Serializers are initialized early on. `toTyped` might then try to initialize the untyped ActorSystemAdapter extension.
   private lazy val resolver = ActorRefResolver(system.toTyped)
@@ -41,11 +42,13 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
     case ReceptionistEntryManifest => receptionistEntryFromBinary(bytes)
     case _ =>
       throw new NotSerializableException(
-        s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
+        s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]"
+      )
   }
 
   private def receptionistEntryToBinary(e: Entry): Array[Byte] =
-    ClusterMessages.ReceptionistEntry.newBuilder()
+    ClusterMessages.ReceptionistEntry
+      .newBuilder()
       .setActorRef(resolver.toSerializationFormat(e.ref))
       .setSystemUid(e.systemUid)
       .build()

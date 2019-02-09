@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.io.{ DataInputStream, InputStream }
+import java.io.{DataInputStream, InputStream}
 import java.lang.invoke.SerializedLambda
 
 import scala.annotation.switch
@@ -61,10 +61,10 @@ object LineNumbers {
    */
   def prettyName(obj: AnyRef): String =
     apply(obj) match {
-      case NoSourceInfo             => obj.getClass.getName
+      case NoSourceInfo => obj.getClass.getName
       case UnknownSourceFormat(msg) => s"${obj.getClass.getName}($msg)"
-      case SourceFile(f)            => s"${obj.getClass.getName}($f)"
-      case l: SourceFileLines       => s"${obj.getClass.getPackage.getName}/$l"
+      case SourceFile(f) => s"${obj.getClass.getName}($f)"
+      case l: SourceFileLines => s"${obj.getClass.getPackage.getName}/$l"
     }
 
   /*
@@ -150,7 +150,7 @@ object LineNumbers {
 
   private def forObject(obj: AnyRef): Result =
     getStreamForClass(obj.getClass).orElse(getStreamForLambda(obj)) match {
-      case None                   => NoSourceInfo
+      case None => NoSourceInfo
       case Some((stream, filter)) => getInfo(stream, filter)
     }
 
@@ -161,7 +161,8 @@ object LineNumbers {
       skipID(dis)
       skipVersion(dis)
       implicit val constants = getConstants(dis)
-      if (debug) println(s"LNB:   fwd(${constants.fwd.size}) rev(${constants.rev.size}) ${constants.fwd.keys.toList.sorted}")
+      if (debug)
+        println(s"LNB:   fwd(${constants.fwd.size}) rev(${constants.rev.size}) ${constants.fwd.keys.toList.sorted}")
       skipClassInfo(dis)
       skipInterfaceInfo(dis)
       skipFields(dis)
@@ -169,17 +170,19 @@ object LineNumbers {
       val source = readAttributes(dis)
 
       if (source.isEmpty) NoSourceInfo
-      else lines match {
-        case None             => SourceFile(source.get)
-        case Some((from, to)) => SourceFileLines(source.get, from, to)
-      }
+      else
+        lines match {
+          case None => SourceFile(source.get)
+          case Some((from, to)) => SourceFileLines(source.get, from, to)
+        }
 
     } catch {
       case NonFatal(ex) => UnknownSourceFormat(s"parse error: ${ex.getMessage}")
     } finally {
-      try dis.close() catch {
+      try dis.close()
+      catch {
         case ex: InterruptedException => throw ex
-        case NonFatal(_)              => // ignore
+        case NonFatal(_) => // ignore
       }
     }
   }
@@ -199,7 +202,8 @@ object LineNumbers {
       writeReplace.setAccessible(true)
       writeReplace.invoke(l) match {
         case serialized: SerializedLambda =>
-          if (debug) println(s"LNB:     found Lambda implemented in ${serialized.getImplClass}:${serialized.getImplMethodName}")
+          if (debug)
+            println(s"LNB:     found Lambda implemented in ${serialized.getImplClass}:${serialized.getImplMethodName}")
           Option(c.getClassLoader.getResourceAsStream(serialized.getImplClass + ".class"))
             .map(_ -> Some(serialized.getImplMethodName))
         case _ => None
@@ -271,11 +275,14 @@ object LineNumbers {
     val count = d.readUnsignedShort()
     if (debug) println(s"LNB: reading $count methods")
     if (c.contains("Code") && c.contains("LineNumberTable")) {
-      (1 to count).map(_ => readMethod(d, c("Code"), c("LineNumberTable"), filter)).flatten.foldLeft(Int.MaxValue -> 0) {
-        case ((low, high), (start, end)) => (Math.min(low, start), Math.max(high, end))
-      } match {
+      (1 to count)
+        .map(_ => readMethod(d, c("Code"), c("LineNumberTable"), filter))
+        .flatten
+        .foldLeft(Int.MaxValue -> 0) {
+          case ((low, high), (start, end)) => (Math.min(low, start), Math.max(high, end))
+        } match {
         case (Int.MaxValue, 0) => None
-        case other             => Some(other)
+        case other => Some(other)
       }
     } else {
       if (debug) println(s"LNB:   (skipped)")
@@ -284,11 +291,9 @@ object LineNumbers {
     }
   }
 
-  private def readMethod(
-    d:                  DataInputStream,
-    codeTag:            Int,
-    lineNumberTableTag: Int,
-    filter:             Option[String])(implicit c: Constants): Option[(Int, Int)] = {
+  private def readMethod(d: DataInputStream, codeTag: Int, lineNumberTableTag: Int, filter: Option[String])(
+      implicit c: Constants
+  ): Option[(Int, Int)] = {
     skip(d, 2) // access flags
     val name = d.readUnsignedShort() // name
     skip(d, 2) // signature

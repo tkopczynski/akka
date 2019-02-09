@@ -5,11 +5,11 @@
 package akka.persistence.fsm
 
 import akka.actor._
-import akka.japi.pf.{ UnitPFBuilder, UnitMatch, FSMTransitionHandlerBuilder }
+import akka.japi.pf.{FSMTransitionHandlerBuilder, UnitMatch, UnitPFBuilder}
 
 import language.implicitConversions
 import scala.collection.mutable
-import akka.routing.{ Deafen, Listen, Listeners }
+import akka.routing.{Deafen, Listen, Listeners}
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -126,7 +126,6 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    *                 DSL
    * ****************************************
    */
-
   /**
    * Insert a new StateFunction at the end of the processing chain for the
    * given state. If the stateTimeout parameter is set, entering this state
@@ -173,7 +172,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    *
    * @return descriptor for staying in current state
    */
-  final def stay(): State = goto(currentState.stateName).withNotification(false) // cannot directly use currentState because of the timeout field
+  final def stay(): State =
+    goto(currentState.stateName)
+      .withNotification(false) // cannot directly use currentState because of the timeout field
 
   /**
    * Produce change descriptor to stop this FSM actor with reason "Normal".
@@ -338,7 +339,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    */
   final def nextStateData = nextState match {
     case null => throw new IllegalStateException("nextStateData is only available during onTransition")
-    case x    => x.stateData
+    case x => x.stateData
   }
 
   /*
@@ -468,7 +469,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     nextState.stopReason match {
       case None => makeTransition(nextState)
       case _ =>
-        nextState.replies.reverse foreach { r => sender() ! r }
+        nextState.replies.reverse foreach { r =>
+          sender() ! r
+        }
         terminate(nextState)
         context.stop(self)
     }
@@ -478,7 +481,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     if (!stateFunctions.contains(nextState.stateName)) {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
-      nextState.replies.reverse foreach { r => sender() ! r }
+      nextState.replies.reverse foreach { r =>
+        sender() ! r
+      }
       if (currentState.stateName != nextState.stateName || nextState.notifies) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
@@ -489,8 +494,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
       val timeout =
         currentState.timeout match {
           case PersistentFSM.SomeMaxFiniteDuration => None
-          case x: Some[FiniteDuration]             => x
-          case None                                => stateTimeouts(currentState.stateName)
+          case x: Some[FiniteDuration] => x
+          case None => stateTimeouts(currentState.stateName)
         }
 
       if (timeout.isDefined) {
@@ -540,8 +545,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    */
   protected def logTermination(reason: Reason): Unit = reason match {
     case Failure(ex: Throwable) => log.error(ex, "terminating due to Failure")
-    case Failure(msg: AnyRef)   => log.error(msg.toString)
-    case _                      =>
+    case Failure(msg: AnyRef) => log.error(msg.toString)
+    case _ =>
   }
 }
 
@@ -576,10 +581,10 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
   private[akka] abstract override def processEvent(event: Event, source: AnyRef): Unit = {
     if (debugEvent) {
       val srcstr = source match {
-        case s: String               => s
+        case s: String => s
         case Timer(name, _, _, _, _) => "timer " + name
-        case a: ActorRef             => a.toString
-        case _                       => "unknown"
+        case a: ActorRef => a.toString
+        case _ => "unknown"
       }
       log.debug("processing {} from {} in state {}", event, srcstr, stateName)
     }
@@ -604,7 +609,9 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
    * The log entries are lost when this actor is restarted.
    */
   protected def getLog: IndexedSeq[LogEntry[S, D]] = {
-    val log = events zip states filter (_._1 ne null) map (x => LogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event))
+    val log = events zip states filter (_._1 ne null) map (
+        x => LogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event)
+    )
     if (full) {
       IndexedSeq() ++ log.drop(pos) ++ log.take(pos)
     } else {
@@ -619,6 +626,7 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
  *
  */
 object AbstractPersistentFSMBase {
+
   /**
    * A partial function value which does not match anything and can be used to
    * “reset” `whenUnhandled` and `onTermination` handlers.
@@ -640,7 +648,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
   import akka.persistence.fsm.japi.pf.FSMStateFunctionBuilder
   import akka.persistence.fsm.japi.pf.FSMStopBuilder
   import akka.japi.pf.FI._
-  import java.util.{ List => JList }
+  import java.util.{List => JList}
   import PersistentFSM._
 
   /**
@@ -699,10 +707,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param stateTimeout default state timeout for this state
    * @param stateFunctionBuilder partial function builder describing response to input
    */
-  final def when(
-    stateName:            S,
-    stateTimeout:         FiniteDuration,
-    stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
+  final def when(stateName: S,
+                 stateTimeout: FiniteDuration,
+                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
@@ -775,7 +782,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], predicate: TypedPredicate2[ET, DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET, DT <: D](eventType: Class[ET],
+                                    dataType: Class[DT],
+                                    predicate: TypedPredicate2[ET, DT],
+                                    apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, predicate, apply)
 
   /**
@@ -788,7 +798,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET, DT <: D](eventType: Class[ET],
+                                    dataType: Class[DT],
+                                    apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, apply)
 
   /**
@@ -801,7 +813,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET](eventType: Class[ET], predicate: TypedPredicate2[ET, D], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET](eventType: Class[ET],
+                           predicate: TypedPredicate2[ET, D],
+                           apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, predicate, apply)
 
   /**
@@ -825,7 +839,8 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent(predicate: TypedPredicate2[AnyRef, D], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent(predicate: TypedPredicate2[AnyRef, D],
+                       apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(predicate, apply)
 
   /**
@@ -839,7 +854,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[DT <: D](eventMatches: JList[AnyRef],
+                                dataType: Class[DT],
+                                apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, dataType, apply)
 
   /**
@@ -865,7 +882,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEventEquals[Ev, DT <: D](event: Ev, dataType: Class[DT], apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEventEquals[Ev, DT <: D](event: Ev,
+                                          dataType: Class[DT],
+                                          apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, dataType, apply)
 
   /**
@@ -951,7 +970,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param predicate  a predicate that will be evaluated on the reason if the type matches
    * @return the builder with the case statement added
    */
-  final def matchStop[RT <: Reason](reasonType: Class[RT], predicate: TypedPredicate[RT], apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+  final def matchStop[RT <: Reason](reasonType: Class[RT],
+                                    predicate: TypedPredicate[RT],
+                                    apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
     new FSMStopBuilder[S, D]().stop(reasonType, predicate, apply)
 
   /**
@@ -972,7 +993,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the argument if the type and predicate matches
    * @return a builder with the case statement added
    */
-  final def matchData[DT <: D](dataType: Class[DT], predicate: TypedPredicate[DT], apply: UnitApply[DT]): UnitPFBuilder[D] =
+  final def matchData[DT <: D](dataType: Class[DT],
+                               predicate: TypedPredicate[DT],
+                               apply: UnitApply[DT]): UnitPFBuilder[D] =
     UnitMatch.`match`(dataType, predicate, apply)
 
   /**

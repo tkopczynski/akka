@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 object GCounter {
   val empty: GCounter = new GCounter
   def apply(): GCounter = empty
+
   /**
    * Java API
    */
@@ -40,11 +41,13 @@ object GCounter {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class GCounter private[akka] (
-  private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty,
-  override val delta:      Option[GCounter]           = None)
-  extends DeltaReplicatedData with ReplicatedDelta
-  with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
+final class GCounter private[akka] (private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty,
+                                    override val delta: Option[GCounter] = None)
+    extends DeltaReplicatedData
+    with ReplicatedDelta
+    with ReplicatedDataSerialization
+    with RemovedNodePruning
+    with FastMerge {
 
   import GCounter.Zero
 
@@ -54,7 +57,9 @@ final class GCounter private[akka] (
   /**
    * Scala API: Current total value of the counter.
    */
-  def value: BigInt = state.values.foldLeft(Zero) { (acc, v) => acc + v }
+  def value: BigInt = state.values.foldLeft(Zero) { (acc, v) =>
+    acc + v
+  }
 
   /**
    * Java API: Current total value of the counter.
@@ -93,10 +98,10 @@ final class GCounter private[akka] (
     else {
       val nextValue = state.get(key) match {
         case Some(v) => v + n
-        case None    => n
+        case None => n
       }
       val newDelta = delta match {
-        case None    => new GCounter(Map(key -> nextValue))
+        case None => new GCounter(Map(key -> nextValue))
         case Some(d) => new GCounter(d.state + (key -> nextValue))
       }
       assignAncestor(new GCounter(state + (key -> nextValue), Some(newDelta)))
@@ -133,7 +138,7 @@ final class GCounter private[akka] (
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): GCounter =
     state.get(removedNode) match {
       case Some(value) => new GCounter(state - removedNode).increment(collapseInto, value)
-      case None        => this
+      case None => this
     }
 
   override def pruningCleanup(removedNode: UniqueAddress): GCounter =
@@ -145,7 +150,7 @@ final class GCounter private[akka] (
 
   override def equals(o: Any): Boolean = o match {
     case other: GCounter => state == other.state
-    case _               => false
+    case _ => false
   }
 
   override def hashCode: Int = state.hashCode

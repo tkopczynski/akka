@@ -36,14 +36,13 @@ private[akka] object RoutedActorCell {
 /**
  * INTERNAL API
  */
-private[akka] class RoutedActorCell(
-  _system:           ActorSystemImpl,
-  _ref:              InternalActorRef,
-  _routerProps:      Props,
-  _routerDispatcher: MessageDispatcher,
-  val routeeProps:   Props,
-  _supervisor:       InternalActorRef)
-  extends ActorCell(_system, _ref, _routerProps, _routerDispatcher, _supervisor) {
+private[akka] class RoutedActorCell(_system: ActorSystemImpl,
+                                    _ref: InternalActorRef,
+                                    _routerProps: Props,
+                                    _routerDispatcher: MessageDispatcher,
+                                    val routeeProps: Props,
+                                    _supervisor: InternalActorRef)
+    extends ActorCell(_system, _ref, _routerProps, _routerDispatcher, _supervisor) {
 
   private[akka] val routerConfig = _routerProps.routerConfig
 
@@ -72,30 +71,33 @@ private[akka] class RoutedActorCell(
    */
   def removeRoutees(routees: immutable.Iterable[Routee], stopChild: Boolean): Unit = {
     val r = _router
-    val newRoutees = routees.foldLeft(r.routees) { (xs, x) => unwatch(x); xs.filterNot(_ == x) }
+    val newRoutees = routees.foldLeft(r.routees) { (xs, x) =>
+      unwatch(x); xs.filterNot(_ == x)
+    }
     _router = r.withRoutees(newRoutees)
     if (stopChild) routees foreach stopIfChild
   }
 
   private def watch(routee: Routee): Unit = routee match {
     case ActorRefRoutee(ref) => watch(ref)
-    case _                   =>
+    case _ =>
   }
 
   private def unwatch(routee: Routee): Unit = routee match {
     case ActorRefRoutee(ref) => unwatch(ref)
-    case _                   =>
+    case _ =>
   }
 
   private def stopIfChild(routee: Routee): Unit = routee match {
-    case ActorRefRoutee(ref) => child(ref.path.name) match {
-      case Some(`ref`) =>
-        // The reason for the delay is to give concurrent
-        // messages a chance to be placed in mailbox before sending PoisonPill,
-        // best effort.
-        system.scheduler.scheduleOnce(100.milliseconds, ref, PoisonPill)(dispatcher)
-      case _ =>
-    }
+    case ActorRefRoutee(ref) =>
+      child(ref.path.name) match {
+        case Some(`ref`) =>
+          // The reason for the delay is to give concurrent
+          // messages a chance to be placed in mailbox before sending PoisonPill,
+          // best effort.
+          system.scheduler.scheduleOnce(100.milliseconds, ref, PoisonPill)(dispatcher)
+        case _ =>
+      }
     case _ =>
   }
 
@@ -149,10 +151,9 @@ private[akka] class RouterActor extends Actor {
       throw ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
   }
 
-  val routingLogicController: Option[ActorRef] = cell.routerConfig.routingLogicController(
-    cell.router.logic).map(props => context.actorOf(
-      props.withDispatcher(context.props.dispatcher),
-      name = "routingLogicController"))
+  val routingLogicController: Option[ActorRef] = cell.routerConfig
+    .routingLogicController(cell.router.logic)
+    .map(props => context.actorOf(props.withDispatcher(context.props.dispatcher), name = "routingLogicController"))
 
   def receive = {
     case GetRoutees =>
@@ -189,17 +190,17 @@ private[akka] class RouterPoolActor(override val supervisorStrategy: SupervisorS
       throw ActorInitializationException("RouterPoolActor can only be used with Pool, not " + other.getClass)
   }
 
-  override def receive = ({
-    case AdjustPoolSize(change: Int) =>
-      if (change > 0) {
-        val newRoutees = Vector.fill(change)(pool.newRoutee(cell.routeeProps, context))
-        cell.addRoutees(newRoutees)
-      } else if (change < 0) {
-        val currentRoutees = cell.router.routees
-        val abandon = currentRoutees.drop(currentRoutees.length + change)
-        cell.removeRoutees(abandon, stopChild = true)
-      }
-  }: Actor.Receive) orElse super.receive
+  override def receive =
+    ({
+      case AdjustPoolSize(change: Int) =>
+        if (change > 0) {
+          val newRoutees = Vector.fill(change)(pool.newRoutee(cell.routeeProps, context))
+          cell.addRoutees(newRoutees)
+        } else if (change < 0) {
+          val currentRoutees = cell.router.routees
+          val abandon = currentRoutees.drop(currentRoutees.length + change)
+          cell.removeRoutees(abandon, stopChild = true)
+        }
+    }: Actor.Receive) orElse super.receive
 
 }
-

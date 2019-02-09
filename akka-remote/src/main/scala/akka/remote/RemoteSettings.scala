@@ -8,7 +8,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.util.Timeout
 import scala.collection.immutable
-import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
+import akka.util.Helpers.{toRootLowerCase, ConfigOps, Requiring}
 import akka.japi.Util._
 import akka.actor.Props
 import akka.event.Logging
@@ -36,12 +36,15 @@ final class RemoteSettings(val config: Config) {
   val TrustedSelectionPaths: Set[String] =
     immutableSeq(getStringList("akka.remote.trusted-selection-paths")).toSet
 
-  val RemoteLifecycleEventsLogLevel: LogLevel = toRootLowerCase(getString("akka.remote.log-remote-lifecycle-events")) match {
+  val RemoteLifecycleEventsLogLevel
+    : LogLevel = toRootLowerCase(getString("akka.remote.log-remote-lifecycle-events")) match {
     case "on" => Logging.DebugLevel
-    case other => Logging.levelFor(other) match {
-      case Some(level) => level
-      case None        => throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
-    }
+    case other =>
+      Logging.levelFor(other) match {
+        case Some(level) => level
+        case None =>
+          throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
+      }
   }
 
   val Dispatcher: String = getString("akka.remote.use-dispatcher")
@@ -74,7 +77,7 @@ final class RemoteSettings(val config: Config) {
     val key = "akka.remote.log-buffer-size-exceeding"
     config.getString(key).toLowerCase match {
       case "off" | "false" => Int.MaxValue
-      case _               => config.getInt(key)
+      case _ => config.getInt(key)
     }
   }
 
@@ -103,9 +106,9 @@ final class RemoteSettings(val config: Config) {
   } requiring (_ > Duration.Zero, "quarantine-after-silence must be > 0")
 
   val QuarantineDuration: FiniteDuration = {
-    config.getMillisDuration("akka.remote.prune-quarantine-marker-after").requiring(
-      _ > Duration.Zero,
-      "prune-quarantine-marker-after must be > 0 ms")
+    config
+      .getMillisDuration("akka.remote.prune-quarantine-marker-after")
+      .requiring(_ > Duration.Zero, "prune-quarantine-marker-after must be > 0 ms")
   }
 
   val CommandAckTimeout: Timeout = {
@@ -126,10 +129,9 @@ final class RemoteSettings(val config: Config) {
 
   val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name =>
     val transportConfig = transportConfigFor(name)
-    (
-      transportConfig.getString("transport-class"),
-      immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
-      transportConfig)
+    (transportConfig.getString("transport-class"),
+     immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
+     transportConfig)
   }
 
   val Adapters: Map[String, String] = configToMap(getConfig("akka.remote.adapters"))

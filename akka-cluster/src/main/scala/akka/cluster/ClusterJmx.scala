@@ -154,7 +154,8 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         val members = clusterView.members.toSeq.sorted(Member.ordering).map { m =>
           s"""{
               |      "address": "${m.address}",
-              |      "roles": [${if (m.roles.isEmpty) "" else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
+              |      "roles": [${if (m.roles.isEmpty) ""
+             else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
               |      "status": "${m.status}"
               |    }""".stripMargin
         } mkString (",\n    ")
@@ -164,7 +165,8 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
             val observerAddresses = observers.toSeq.sorted.map("\"" + _.address + "\"")
             s"""{
               |      "node": "${subject.address}",
-              |      "observed-by": [${if (observerAddresses.isEmpty) "" else observerAddresses.mkString("\n        ", ",\n        ", "\n      ")}]
+              |      "observed-by": [${if (observerAddresses.isEmpty) ""
+               else observerAddresses.mkString("\n        ", ",\n        ", "\n      ")}]
               |    }""".stripMargin
           }
 
@@ -210,7 +212,8 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         } else {
           log.warning(
             s"Could not register Cluster JMX MBean with name=$clusterMBeanName as it is already registered. " +
-              "If you are running multiple clusters in the same JVM, set 'akka.cluster.jmx.multi-mbeans-in-same-jvm = on' in config")
+            "If you are running multiple clusters in the same JVM, set 'akka.cluster.jmx.multi-mbeans-in-same-jvm = on' in config"
+          )
         }
       }
     }
@@ -229,7 +232,8 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         } else {
           log.warning(
             s"Could not unregister Cluster JMX MBean with name=$clusterMBeanName as it was not found. " +
-              "If you are running multiple clusters in the same JVM, set 'akka.cluster.jmx.multi-mbeans-in-same-jvm = on' in config")
+            "If you are running multiple clusters in the same JVM, set 'akka.cluster.jmx.multi-mbeans-in-same-jvm = on' in config"
+          )
         }
       }
     }

@@ -9,7 +9,7 @@ import language.implicitConversions
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
 import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.Channel
-import akka.remote.testconductor.{ TestConductorProtocol => TCP }
+import akka.remote.testconductor.{TestConductorProtocol => TCP}
 import akka.actor.Address
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
 import scala.concurrent.duration._
@@ -33,18 +33,25 @@ private[akka] sealed trait ConfirmedClientOp extends ClientOp
  */
 private[akka] final case class Hello(name: String, addr: Address) extends NetworkOp
 
-private[akka] final case class EnterBarrier(name: String, timeout: Option[FiniteDuration]) extends ServerOp with NetworkOp
+private[akka] final case class EnterBarrier(name: String, timeout: Option[FiniteDuration])
+    extends ServerOp
+    with NetworkOp
 private[akka] final case class FailBarrier(name: String) extends ServerOp with NetworkOp
 private[akka] final case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 
-private[akka] final case class Throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Float) extends CommandOp
-private[akka] final case class ThrottleMsg(target: Address, direction: Direction, rateMBit: Float) extends ConfirmedClientOp with NetworkOp
+private[akka] final case class Throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Float)
+    extends CommandOp
+private[akka] final case class ThrottleMsg(target: Address, direction: Direction, rateMBit: Float)
+    extends ConfirmedClientOp
+    with NetworkOp
 
 private[akka] final case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
 private[akka] final case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
 
 private[akka] final case class Terminate(node: RoleName, shutdownOrExit: Either[Boolean, Int]) extends CommandOp
-private[akka] final case class TerminateMsg(shutdownOrExit: Either[Boolean, Int]) extends ConfirmedClientOp with NetworkOp
+private[akka] final case class TerminateMsg(shutdownOrExit: Either[Boolean, Int])
+    extends ConfirmedClientOp
+    with NetworkOp
 
 private[akka] final case class GetAddress(node: RoleName) extends ServerOp with NetworkOp
 private[akka] final case class AddressReply(node: RoleName, addr: Address) extends UnconfirmedClientOp with NetworkOp
@@ -67,9 +74,9 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
       .build
 
   implicit def direction2proto(dir: Direction): TCP.Direction = dir match {
-    case Direction.Send    => TCP.Direction.Send
+    case Direction.Send => TCP.Direction.Send
     case Direction.Receive => TCP.Direction.Receive
-    case Direction.Both    => TCP.Direction.Both
+    case Direction.Both => TCP.Direction.Both
   }
 
   def encode(ctx: ChannelHandlerContext, ch: Channel, msg: AnyRef): AnyRef = msg match {
@@ -89,11 +96,19 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
         case FailBarrier(name) =>
           w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setOp(BarrierOp.Fail))
         case ThrottleMsg(target, dir, rate) =>
-          w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
-            .setFailure(TCP.FailType.Throttle).setDirection(dir).setRateMBit(rate))
+          w.setFailure(
+            TCP.InjectFailure.newBuilder
+              .setAddress(target)
+              .setFailure(TCP.FailType.Throttle)
+              .setDirection(dir)
+              .setRateMBit(rate)
+          )
         case DisconnectMsg(target, abort) =>
-          w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
-            .setFailure(if (abort) TCP.FailType.Abort else TCP.FailType.Disconnect))
+          w.setFailure(
+            TCP.InjectFailure.newBuilder
+              .setAddress(target)
+              .setFailure(if (abort) TCP.FailType.Abort else TCP.FailType.Disconnect)
+          )
         case TerminateMsg(Right(exitValue)) =>
           w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Exit).setExitValue(exitValue))
         case TerminateMsg(Left(false)) =>
@@ -118,9 +133,9 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
     Address(addr.getProtocol, addr.getSystem, addr.getHost, addr.getPort)
 
   implicit def direction2scala(dir: TCP.Direction): Direction = dir match {
-    case TCP.Direction.Send    => Direction.Send
+    case TCP.Direction.Send => Direction.Send
     case TCP.Direction.Receive => Direction.Receive
-    case TCP.Direction.Both    => Direction.Both
+    case TCP.Direction.Both => Direction.Both
   }
 
   def decode(ctx: ChannelHandlerContext, ch: Channel, msg: AnyRef): AnyRef = msg match {
@@ -132,21 +147,21 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
         val barrier = w.getBarrier
         barrier.getOp match {
           case BarrierOp.Succeeded => BarrierResult(barrier.getName, true)
-          case BarrierOp.Failed    => BarrierResult(barrier.getName, false)
-          case BarrierOp.Fail      => FailBarrier(barrier.getName)
-          case BarrierOp.Enter => EnterBarrier(
-            barrier.getName,
-            if (barrier.hasTimeout) Option(Duration.fromNanos(barrier.getTimeout)) else None)
+          case BarrierOp.Failed => BarrierResult(barrier.getName, false)
+          case BarrierOp.Fail => FailBarrier(barrier.getName)
+          case BarrierOp.Enter =>
+            EnterBarrier(barrier.getName,
+                         if (barrier.hasTimeout) Option(Duration.fromNanos(barrier.getTimeout)) else None)
         }
       } else if (w.hasFailure) {
         val f = w.getFailure
-        import TCP.{ FailType => FT }
+        import TCP.{FailType => FT}
         f.getFailure match {
-          case FT.Throttle       => ThrottleMsg(f.getAddress, f.getDirection, f.getRateMBit)
-          case FT.Abort          => DisconnectMsg(f.getAddress, true)
-          case FT.Disconnect     => DisconnectMsg(f.getAddress, false)
-          case FT.Exit           => TerminateMsg(Right(f.getExitValue))
-          case FT.Shutdown       => TerminateMsg(Left(false))
+          case FT.Throttle => ThrottleMsg(f.getAddress, f.getDirection, f.getRateMBit)
+          case FT.Abort => DisconnectMsg(f.getAddress, true)
+          case FT.Disconnect => DisconnectMsg(f.getAddress, false)
+          case FT.Exit => TerminateMsg(Right(f.getExitValue))
+          case FT.Shutdown => TerminateMsg(Left(false))
           case FT.ShutdownAbrupt => TerminateMsg(Left(true))
         }
       } else if (w.hasAddr) {

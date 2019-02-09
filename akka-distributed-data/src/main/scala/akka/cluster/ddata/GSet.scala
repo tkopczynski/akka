@@ -31,8 +31,10 @@ object GSet {
  */
 @SerialVersionUID(1L)
 final case class GSet[A] private (elements: Set[A])(override val delta: Option[GSet[A]])
-  extends DeltaReplicatedData with ReplicatedDelta
-  with ReplicatedDataSerialization with FastMerge {
+    extends DeltaReplicatedData
+    with ReplicatedDelta
+    with ReplicatedDataSerialization
+    with FastMerge {
 
   type T = GSet[A]
   type D = GSet[A]
@@ -62,7 +64,7 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
   def add(element: A): GSet[A] = {
     val newDelta = delta match {
       case Some(e) => Some(new GSet(e.elements + element)(None))
-      case None    => Some(new GSet[A](Set.apply[A](element))(None))
+      case None => Some(new GSet[A](Set.apply[A](element))(None))
     }
     assignAncestor(new GSet[A](elements + element)(newDelta))
   }

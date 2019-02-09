@@ -6,7 +6,7 @@ package akka.osgi
 
 import akka.event.Logging
 import org.osgi.service.log.LogService
-import akka.event.Logging.{ DefaultLogger, LogEvent }
+import akka.event.Logging.{DefaultLogger, LogEvent}
 import akka.event.Logging.Error.NoCause
 
 /**
@@ -29,6 +29,7 @@ class DefaultOSGiLogger extends DefaultLogger {
     //the Default Logger needs to be aware of the LogService which is published on the EventStream
     context.system.eventStream.subscribe(self, classOf[LogService])
     context.system.eventStream.unsubscribe(self, UnregisteringLogService.getClass)
+
     /**
      * Logs every already received LogEvent and set the logger ready to log every incoming LogEvent.
      *
@@ -43,7 +44,7 @@ class DefaultOSGiLogger extends DefaultLogger {
 
     {
       case logService: LogService => setLogService(logService)
-      case logEvent: LogEvent     => messagesToLog :+= logEvent
+      case logEvent: LogEvent => messagesToLog :+= logEvent
     }
   }
 
@@ -57,7 +58,7 @@ class DefaultOSGiLogger extends DefaultLogger {
     context.system.eventStream.unsubscribe(self, classOf[LogService])
 
     {
-      case logEvent: LogEvent      => logMessage(logService, logEvent)
+      case logEvent: LogEvent => logMessage(logService, logEvent)
       case UnregisteringLogService => context.become(uninitialisedReceive)
     }
   }
@@ -71,9 +72,12 @@ class DefaultOSGiLogger extends DefaultLogger {
   def logMessage(logService: LogService, event: LogEvent): Unit = {
     event match {
       case error: Logging.Error if error.cause != NoCause =>
-        logService.log(event.level.asInt, messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message), error.cause)
+        logService.log(event.level.asInt,
+                       messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message),
+                       error.cause)
       case _ =>
-        logService.log(event.level.asInt, messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
+        logService.log(event.level.asInt,
+                       messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
     }
   }
 

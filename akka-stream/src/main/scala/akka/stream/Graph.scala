@@ -15,6 +15,7 @@ import scala.annotation.unchecked.uncheckedVariance
  * @see [[akka.stream.stage.GraphStage]]
  */
 trait Graph[+S <: Shape, +M] {
+
   /**
    * Type-level accessor for the shape parameter of this graph.
    */
@@ -23,6 +24,7 @@ trait Graph[+S <: Shape, +M] {
    * The shape of a graph is all that is externally visible: its inlets and outlets.
    */
   def shape: S
+
   /**
    * INTERNAL API.
    *
@@ -58,7 +60,7 @@ trait Graph[+S <: Shape, +M] {
   def async(dispatcher: String, inputBufferSize: Int) =
     addAttributes(
       Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
-        and Attributes.inputBuffer(inputBufferSize, inputBufferSize)
+      and Attributes.inputBuffer(inputBufferSize, inputBufferSize)
     )
 
   /**

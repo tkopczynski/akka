@@ -9,7 +9,7 @@ import java.util.Optional
 import akka.event.Logging
 
 import scala.annotation.tailrec
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.{classTag, ClassTag}
 import akka.japi.function
 import java.net.URLEncoder
 
@@ -17,7 +17,7 @@ import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
-import akka.util.{ ByteString, OptionVal }
+import akka.util.{ByteString, OptionVal}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -44,9 +44,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   private[stream] def isAsync: Boolean = {
     attributeList.nonEmpty && attributeList.exists {
-      case AsyncBoundary                 => true
+      case AsyncBoundary => true
       case ActorAttributes.Dispatcher(_) => true
-      case _                             => false
+      case _ => false
     }
   }
 
@@ -85,7 +85,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def get[T <: Attribute: ClassTag](default: T): T =
     get[T] match {
       case Some(a) => a
-      case None    => default
+      case None => default
     }
 
   /**
@@ -129,7 +129,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
     find(attributeList) match {
       case OptionVal.Some(t) => t.asInstanceOf[T]
-      case OptionVal.None    => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
+      case OptionVal.None => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
     }
   }
 
@@ -165,8 +165,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
               concatNames(i, null, b.append(first).append('-').append(n))
             } else concatNames(i, n, null)
           case _ => concatNames(i, first, buf)
-        }
-      else if (buf eq null) first
+        } else if (buf eq null) first
       else buf.toString
 
     Option(concatNames(attributeList.reverseIterator, null, null))
@@ -178,8 +177,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
     @tailrec def find(attrs: List[Attribute]): String = attrs match {
       case Attributes.Name(name) :: _ => name
-      case _ :: tail                  => find(tail)
-      case Nil                        => default
+      case _ :: tail => find(tail)
+      case Nil => default
     }
     find(attributeList)
   }
@@ -264,7 +263,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def getFirst[T <: Attribute: ClassTag](default: T): T = {
     getFirst[T] match {
       case Some(a) => a
-      case None    => default
+      case None => default
     }
   }
 
@@ -290,30 +289,40 @@ object Attributes {
 
   final case class Name(n: String) extends Attribute
   final case class InputBuffer(initial: Int, max: Int) extends MandatoryAttribute
-  final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
+  final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel)
+      extends Attribute
   final case object AsyncBoundary extends Attribute
 
   object LogLevels {
+
     /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */
     final val Off: Logging.LogLevel = Logging.levelFor("off").get
+
     /** Use to enable logging at ERROR level for certain operations when configuring [[Attributes#logLevels]] */
     final val Error: Logging.LogLevel = Logging.ErrorLevel
+
     /** Use to enable logging at WARNING level for certain operations when configuring [[Attributes#logLevels]] */
     final val Warning: Logging.LogLevel = Logging.WarningLevel
+
     /** Use to enable logging at INFO level for certain operations when configuring [[Attributes#logLevels]] */
     final val Info: Logging.LogLevel = Logging.InfoLevel
+
     /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#logLevels]] */
     final val Debug: Logging.LogLevel = Logging.DebugLevel
   }
 
   /** Java API: Use to disable logging on certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelOff: Logging.LogLevel = LogLevels.Off
+
   /** Use to enable logging at ERROR level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelError: Logging.LogLevel = LogLevels.Error
+
   /** Use to enable logging at WARNING level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelWarning: Logging.LogLevel = LogLevels.Warning
+
   /** Use to enable logging at INFO level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelInfo: Logging.LogLevel = LogLevels.Info
+
   /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelDebug: Logging.LogLevel = LogLevels.Debug
 
@@ -351,7 +360,9 @@ object Attributes {
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
-  def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
+  def createLogLevels(onElement: Logging.LogLevel,
+                      onFinish: Logging.LogLevel,
+                      onFailure: Logging.LogLevel): Attributes =
     logLevels(onElement, onFinish, onFailure)
 
   /**
@@ -370,7 +381,9 @@ object Attributes {
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
-  def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel, onFinish: Logging.LogLevel = Logging.DebugLevel, onFailure: Logging.LogLevel = Logging.ErrorLevel) =
+  def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel,
+                onFinish: Logging.LogLevel = Logging.DebugLevel,
+                onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
 
   /**
@@ -391,6 +404,7 @@ object ActorAttributes {
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
 
   object Dispatcher {
+
     /**
      * INTERNAL API
      * Resolves the dispatcher's name with a fallback to the default blocking IO dispatcher.
@@ -400,7 +414,7 @@ object ActorAttributes {
     @InternalApi
     private[akka] def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
       attributes.mandatoryAttribute[Dispatcher] match {
-        case IODispatcher           => settings.blockingIoDispatcher
+        case IODispatcher => settings.blockingIoDispatcher
         case Dispatcher(dispatcher) => dispatcher
       }
 
@@ -448,7 +462,9 @@ object ActorAttributes {
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
-  def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
+  def createLogLevels(onElement: Logging.LogLevel,
+                      onFinish: Logging.LogLevel,
+                      onFailure: Logging.LogLevel): Attributes =
     logLevels(onElement, onFinish, onFailure)
 
   /**
@@ -467,7 +483,9 @@ object ActorAttributes {
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
-  def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel, onFinish: Logging.LogLevel = Logging.DebugLevel, onFailure: Logging.LogLevel = Logging.ErrorLevel) =
+  def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel,
+                onFinish: Logging.LogLevel = Logging.DebugLevel,
+                onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
 
 }

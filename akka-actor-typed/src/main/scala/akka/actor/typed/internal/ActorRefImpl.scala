@@ -37,7 +37,7 @@ private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipie
    */
   final override def equals(that: Any): Boolean = that match {
     case other: ActorRef[_] => path.uid == other.path.uid && path == other.path
-    case _                  => false
+    case _ => false
   }
 
   override def toString: String = s"Actor[${path}#${path.uid}]"

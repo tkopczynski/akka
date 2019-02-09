@@ -6,7 +6,7 @@ package akka.testkit
 
 import scala.collection.immutable
 import scala.util.Random
-import java.net.{ DatagramSocket, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
+import java.net.{DatagramSocket, InetSocketAddress, NetworkInterface, StandardProtocolFamily}
 import java.nio.channels.DatagramChannel
 import java.nio.channels.ServerSocketChannel
 
@@ -59,8 +59,8 @@ object SocketUtil {
     }
 
     protocol match {
-      case Tcp  => temporaryLocalPort(udp = false)
-      case Udp  => temporaryLocalPort(udp = true)
+      case Tcp => temporaryLocalPort(udp = false)
+      case Udp => temporaryLocalPort(udp = true)
       case Both => findBoth(5)
     }
   }
@@ -73,7 +73,9 @@ object SocketUtil {
   def temporaryServerAddress(address: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): InetSocketAddress =
     temporaryServerAddresses(1, address, udp).head
 
-  def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
+  def temporaryServerAddresses(numberOfAddresses: Int,
+                               hostname: String = RANDOM_LOOPBACK_ADDRESS,
+                               udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
     Vector.fill(numberOfAddresses) {
 
       val address = hostname match {

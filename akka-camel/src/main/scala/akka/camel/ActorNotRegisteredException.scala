@@ -3,6 +3,7 @@
  */
 
 package akka.camel
+
 /**
  * Thrown to indicate that the actor referenced by an endpoint URI cannot be
  * found in the actor system.

@@ -6,9 +6,9 @@ package akka.util
 
 import annotation.tailrec
 
-import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentSkipListSet}
 import java.util.Comparator
-import scala.collection.JavaConverters.{ asScalaIteratorConverter, collectionAsScalaIterableConverter }
+import scala.collection.JavaConverters.{asScalaIteratorConverter, collectionAsScalaIterableConverter}
 
 /**
  * An implementation of a ConcurrentMultiMap
@@ -17,9 +17,10 @@ import scala.collection.JavaConverters.{ asScalaIteratorConverter, collectionAsS
  */
 class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
-  def this(mapSize: Int, cmp: (V, V) => Int) = this(mapSize, new Comparator[V] {
-    def compare(a: V, b: V): Int = cmp(a, b)
-  })
+  def this(mapSize: Int, cmp: (V, V) => Int) =
+    this(mapSize, new Comparator[V] {
+      def compare(a: V, b: V): Int = cmp(a, b)
+    })
 
   private val container = new ConcurrentHashMap[K, ConcurrentSkipListSet[V]](mapSize)
   private val emptySet = new ConcurrentSkipListSet[V]
@@ -75,7 +76,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   def findValue(key: K)(f: (V) => Boolean): Option[V] =
     container get key match {
       case null => None
-      case set  => set.iterator.asScala find f
+      case set => set.iterator.asScala find f
     }
 
   /**
@@ -92,7 +93,9 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
    * Applies the supplied function to all keys and their values
    */
   def foreach(fun: (K, V) => Unit): Unit =
-    container.entrySet.iterator.asScala foreach { e => e.getValue.iterator.asScala.foreach(fun(e.getKey, _)) }
+    container.entrySet.iterator.asScala foreach { e =>
+      e.getValue.iterator.asScala.foreach(fun(e.getKey, _))
+    }
 
   /**
    * Returns the union of all value sets.
@@ -190,4 +193,5 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
  * Adds/remove is serialized over the specified key
  * Reads are fully concurrent &lt;-- el-cheapo
  */
-class ConcurrentMultiMap[K, V](mapSize: Int, valueComparator: Comparator[V]) extends Index[K, V](mapSize, valueComparator)
+class ConcurrentMultiMap[K, V](mapSize: Int, valueComparator: Comparator[V])
+    extends Index[K, V](mapSize, valueComparator)

@@ -7,7 +7,7 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
-import java.util.concurrent.locks.{ ReentrantLock, Lock }
+import java.util.concurrent.locks.{Lock, ReentrantLock}
 
 /**
  * A lock-less thread-safe implementation of [[akka.remote.FailureDetectorRegistry]].
@@ -23,12 +23,12 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) 
 
   final override def isAvailable(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) => r.isAvailable
-    case _       => true
+    case _ => true
   }
 
   final override def isMonitoring(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) => r.isMonitoring
-    case _       => false
+    case _ => false
   }
 
   final override def heartbeat(resource: A): Unit = {
@@ -51,7 +51,7 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) 
               // address below was introduced as a var because of binary compatibility constraints
               newDetector match {
                 case phi: PhiAccrualFailureDetector => phi.address = resource.toString
-                case _                              =>
+                case _ =>
               }
 
               newDetector.heartbeat()
@@ -89,4 +89,3 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) 
     resourceToFailureDetector.get.get(resource)
 
 }
-

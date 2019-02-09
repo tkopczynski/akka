@@ -542,7 +542,7 @@ trait Actor {
     }
   }
 
-  def foo2(): String =    ???
+  def foo2(): String = ???
 
   /**
    * INTERNAL API.

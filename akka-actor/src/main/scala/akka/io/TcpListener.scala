@@ -4,7 +4,7 @@
 
 package akka.io
 
-import java.nio.channels.{ SelectionKey, ServerSocketChannel, SocketChannel }
+import java.nio.channels.{SelectionKey, ServerSocketChannel, SocketChannel}
 import java.net.InetSocketAddress
 
 import scala.annotation.tailrec
@@ -12,14 +12,16 @@ import scala.util.control.NonFatal
 import akka.actor._
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 
 /**
  * INTERNAL API
  */
 private[io] object TcpListener {
 
-  final case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage with NoSerializationVerificationNeeded {
+  final case class RegisterIncoming(channel: SocketChannel)
+      extends HasFailureMessage
+      with NoSerializationVerificationNeeded {
     def failureMessage = FailedRegisterIncoming(channel)
   }
 
@@ -30,13 +32,14 @@ private[io] object TcpListener {
 /**
  * INTERNAL API
  */
-private[io] class TcpListener(
-  selectorRouter:  ActorRef,
-  tcp:             TcpExt,
-  channelRegistry: ChannelRegistry,
-  bindCommander:   ActorRef,
-  bind:            Bind)
-  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[io] class TcpListener(selectorRouter: ActorRef,
+                              tcp: TcpExt,
+                              channelRegistry: ChannelRegistry,
+                              bindCommander: ActorRef,
+                              bind: Bind)
+    extends Actor
+    with ActorLogging
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import TcpListener._
   import tcp.Settings._
@@ -55,13 +58,13 @@ private[io] class TcpListener(
       socket.bind(bind.localAddress, bind.backlog)
       val ret = socket.getLocalSocketAddress match {
         case isa: InetSocketAddress => isa
-        case x                      => throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
+        case x => throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
       }
       channelRegistry.register(channel, if (bind.pullMode) 0 else SelectionKey.OP_ACCEPT)
       log.debug("Successfully bound to {}", ret)
       bind.options.foreach {
         case o: Inet.SocketOptionV2 => o.afterBind(channel.socket)
-        case _                      =>
+        case _ =>
       }
       ret
     } catch {
@@ -97,7 +100,9 @@ private[io] class TcpListener(
 
     case Unbind =>
       log.debug("Unbinding endpoint {}", localAddress)
-      registration.cancelAndClose { () => self ! Unbound }
+      registration.cancelAndClose { () =>
+        self ! Unbound
+      }
 
       context.become(unregistering(sender()))
   }
@@ -123,7 +128,8 @@ private[io] class TcpListener(
         Props(classOf[TcpIncomingConnection], tcp, socketChannel, registry, bind.handler, bind.options, bind.pullMode)
       selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, props)
       acceptAllPending(registration, limit - 1)
-    } else if (bind.pullMode) limit else BatchAcceptLimit
+    } else if (bind.pullMode) limit
+    else BatchAcceptLimit
   }
 
   override def postStop(): Unit = {

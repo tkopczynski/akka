@@ -8,18 +8,18 @@ import java.net.InetAddress
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
+import akka.discovery.ServiceDiscovery.{Resolved, ResolvedTarget}
 import akka.event.Logging
-import akka.io.{ Dns, IO }
+import akka.io.{Dns, IO}
 import akka.pattern.ask
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.discovery._
-import akka.io.dns.DnsProtocol.{ Ip, Srv }
-import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
+import akka.io.dns.DnsProtocol.{Ip, Srv}
+import akka.io.dns.{AAAARecord, ARecord, DnsProtocol, SRVRecord}
 
-import scala.collection.{ immutable => im }
+import scala.collection.{immutable => im}
 
 /**
  * INTERNAL API
@@ -95,7 +95,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
         case resolved: DnsProtocol.Resolved =>
           log.debug("Resolved Dns.Resolved: {}", resolved)
           val addresses = resolved.records.collect {
-            case a: ARecord    => ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
+            case a: ARecord => ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
             case a: AAAARecord => ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
           }
           Resolved(lookup.serviceName, addresses)

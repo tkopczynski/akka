@@ -11,10 +11,12 @@ import akka.util.ccompat._
  * Typeclass which describes a classification hierarchy. Observe the contract between `isEqual` and `isSubclass`!
  */
 trait Subclassification[K] {
+
   /**
    * True if and only if x and y are of the same class.
    */
   def isEqual(x: K, y: K): Boolean
+
   /**
    * True if and only if x is a subclass of y; equal classes must be considered sub-classes!
    */
@@ -23,7 +25,9 @@ trait Subclassification[K] {
 
 private[akka] object SubclassifiedIndex {
 
-  class Nonroot[K, V](override val root: SubclassifiedIndex[K, V], val key: K, _values: Set[V])(implicit sc: Subclassification[K]) extends SubclassifiedIndex[K, V](_values) {
+  class Nonroot[K, V](override val root: SubclassifiedIndex[K, V], val key: K, _values: Set[V])(
+      implicit sc: Subclassification[K]
+  ) extends SubclassifiedIndex[K, V](_values) {
 
     override def innerAddValue(key: K, value: V): Changes = {
       // break the recursion on super when key is found and transition to recursive add-to-set
@@ -183,16 +187,18 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
   /**
    * Find all subkeys of a given key in the index excluding some subkeys.
    */
-  protected final def findSubKeysExcept(key: K, except: Vector[Nonroot[K, V]]): Set[K] = root.innerFindSubKeys(key, except)
+  protected final def findSubKeysExcept(key: K, except: Vector[Nonroot[K, V]]): Set[K] =
+    root.innerFindSubKeys(key, except)
   protected def innerFindSubKeys(key: K, except: Vector[Nonroot[K, V]]): Set[K] =
     subkeys.foldLeft(Set.empty[K]) { (s, n) =>
       if (sc.isEqual(key, n.key)) s
-      else n.innerFindSubKeys(key, except) ++ {
-        if (sc.isSubclass(n.key, key) && !except.exists(e => sc.isEqual(key, e.key)))
-          s + n.key
-        else
-          s
-      }
+      else
+        n.innerFindSubKeys(key, except) ++ {
+          if (sc.isSubclass(n.key, key) && !except.exists(e => sc.isEqual(key, e.key)))
+            s + n.key
+          else
+            s
+        }
     }
 
   override def toString = subkeys.mkString("SubclassifiedIndex(" + values + ",\n", ",\n", ")")
@@ -210,7 +216,9 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
   }
 
   private def mergeChangesByKey(changes: Changes): Changes =
-    changes.foldLeft(emptyMergeMap[K, V]) {
-      case (m, (k, s)) => m.updated(k, m(k) ++ s)
-    }.to(immutable.Seq)
+    changes
+      .foldLeft(emptyMergeMap[K, V]) {
+        case (m, (k, s)) => m.updated(k, m(k) ++ s)
+      }
+      .to(immutable.Seq)
 }

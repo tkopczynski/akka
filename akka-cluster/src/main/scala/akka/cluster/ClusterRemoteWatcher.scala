@@ -21,18 +21,22 @@ import akka.remote.RARP
  * INTERNAL API
  */
 private[cluster] object ClusterRemoteWatcher {
+
   /**
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
-  def props(
-    failureDetector:                FailureDetectorRegistry[Address],
-    heartbeatInterval:              FiniteDuration,
-    unreachableReaperInterval:      FiniteDuration,
-    heartbeatExpectedResponseAfter: FiniteDuration): Props =
-    Props(classOf[ClusterRemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+  def props(failureDetector: FailureDetectorRegistry[Address],
+            heartbeatInterval: FiniteDuration,
+            unreachableReaperInterval: FiniteDuration,
+            heartbeatExpectedResponseAfter: FiniteDuration): Props =
+    Props(classOf[ClusterRemoteWatcher],
+          failureDetector,
+          heartbeatInterval,
+          unreachableReaperInterval,
+          heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
 
-  private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus) extends NoSerializationVerificationNeeded
+  private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
+      extends NoSerializationVerificationNeeded
 
 }
 
@@ -47,16 +51,11 @@ private[cluster] object ClusterRemoteWatcher {
  * over responsibility from `RemoteWatcher` if a watch is added before a node is member
  * of the cluster and then later becomes cluster member.
  */
-private[cluster] class ClusterRemoteWatcher(
-  failureDetector:                FailureDetectorRegistry[Address],
-  heartbeatInterval:              FiniteDuration,
-  unreachableReaperInterval:      FiniteDuration,
-  heartbeatExpectedResponseAfter: FiniteDuration)
-  extends RemoteWatcher(
-    failureDetector,
-    heartbeatInterval,
-    unreachableReaperInterval,
-    heartbeatExpectedResponseAfter) {
+private[cluster] class ClusterRemoteWatcher(failureDetector: FailureDetectorRegistry[Address],
+                                            heartbeatInterval: FiniteDuration,
+                                            unreachableReaperInterval: FiniteDuration,
+                                            heartbeatExpectedResponseAfter: FiniteDuration)
+    extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter) {
 
   import ClusterRemoteWatcher.DelayedQuarantine
 
@@ -85,11 +84,11 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress => m.address }
       clusterNodes foreach takeOverResponsibility
       unreachable = unreachable diff clusterNodes
-    case MemberJoined(m)                      => memberJoined(m)
-    case MemberUp(m)                          => memberUp(m)
-    case MemberWeaklyUp(m)                    => memberUp(m)
-    case MemberRemoved(m, previousStatus)     => memberRemoved(m, previousStatus)
-    case _: MemberEvent                       => // not interesting
+    case MemberJoined(m) => memberJoined(m)
+    case MemberUp(m) => memberUp(m)
+    case MemberWeaklyUp(m) => memberUp(m)
+    case MemberRemoved(m, previousStatus) => memberRemoved(m, previousStatus)
+    case _: MemberEvent => // not interesting
     case DelayedQuarantine(m, previousStatus) => delayedQuarantine(m, previousStatus)
   }
 
@@ -111,8 +110,10 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes -= m.address
 
       if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address, Some(m.uniqueAddress.longUid),
-          s"Cluster member removed, previous status [$previousStatus]", harmless = false)
+        quarantine(m.address,
+                   Some(m.uniqueAddress.longUid),
+                   s"Cluster member removed, previous status [$previousStatus]",
+                   harmless = false)
       } else if (arteryEnabled) {
         // Don't quarantine gracefully removed members (leaving) directly,
         // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
@@ -120,7 +121,8 @@ private[cluster] class ClusterRemoteWatcher(
         // is triggered earlier.
         pendingDelayedQuarantine += m.uniqueAddress
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
+        context.system.scheduler
+          .scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
       }
 
       publishAddressTerminated(m.address)
@@ -131,16 +133,20 @@ private[cluster] class ClusterRemoteWatcher(
     if (pendingDelayedQuarantine.nonEmpty)
       pendingDelayedQuarantine.find(_.address == newIncarnation.address).foreach { oldIncarnation =>
         pendingDelayedQuarantine -= oldIncarnation
-        quarantine(oldIncarnation.address, Some(oldIncarnation.longUid),
-          s"Cluster member removed, new incarnation joined", harmless = true)
+        quarantine(oldIncarnation.address,
+                   Some(oldIncarnation.longUid),
+                   s"Cluster member removed, new incarnation joined",
+                   harmless = true)
       }
   }
 
   def delayedQuarantine(m: Member, previousStatus: MemberStatus): Unit = {
     if (pendingDelayedQuarantine(m.uniqueAddress)) {
       pendingDelayedQuarantine -= m.uniqueAddress
-      quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]",
-        harmless = true)
+      quarantine(m.address,
+                 Some(m.uniqueAddress.longUid),
+                 s"Cluster member removed, previous status [$previousStatus]",
+                 harmless = true)
     }
   }
 

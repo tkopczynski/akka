@@ -91,7 +91,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
 
     override def equals(o: Any): Boolean = o match {
       case v: Version => compareTo(v) == 0
-      case _          => false
+      case _ => false
     }
 
     override def hashCode(): Int = {
@@ -131,21 +131,21 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
           val attributes = manifest.getMainAttributes
           val title = attributes.getValue(new Attributes.Name(ImplTitle)) match {
             case null => attributes.getValue(new Attributes.Name(BundleName))
-            case t    => t
+            case t => t
           }
           val version = attributes.getValue(new Attributes.Name(ImplVersion)) match {
             case null => attributes.getValue(new Attributes.Name(BundleVersion))
-            case v    => v
+            case v => v
           }
           val vendor = attributes.getValue(new Attributes.Name(ImplVendor)) match {
             case null => attributes.getValue(new Attributes.Name(BundleVendor))
-            case v    => v
+            case v => v
           }
 
           if (title != null
-            && version != null
-            && vendor != null
-            && knownVendors(vendor)) {
+              && version != null
+              && vendor != null
+              && knownVendors(vendor)) {
             manifests = manifests.updated(title, new Version(version))
           }
         } finally {
@@ -172,11 +172,14 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
         val highestVersion = values.max
         Logging(system, getClass).warning(
           "Detected possible incompatible versions on the classpath. " +
-            s"Please note that a given $productName version MUST be the same across all modules of $productName " +
-            "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
-            "same version. Make sure you're using a compatible set of libraries. " +
-            "Possibly conflicting versions [{}] in libraries [{}]",
-          highestVersion, conflictingVersions, fullInfo)
+          s"Please note that a given $productName version MUST be the same across all modules of $productName " +
+          "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
+          "same version. Make sure you're using a compatible set of libraries. " +
+          "Possibly conflicting versions [{}] in libraries [{}]",
+          highestVersion,
+          conflictingVersions,
+          fullInfo
+        )
       }
       false
     } else

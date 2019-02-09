@@ -4,10 +4,10 @@
 
 package akka.stream.testkit.scaladsl
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ActorRef, ActorSystem}
 import akka.annotation.InternalApi
 import akka.stream.Materializer
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.{PhasedFusingActorMaterializer, StreamSupervisor}
 import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
@@ -46,11 +46,8 @@ object StreamTestKit {
       try probe.awaitAssert {
         supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
         children = probe.expectMsgType[StreamSupervisor.Children].children
-        assert(
-          children.isEmpty,
-          s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
-      }
-      catch {
+        assert(children.isEmpty, s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
+      } catch {
         case ex: Throwable =>
           children.foreach(_ ! StreamSupervisor.PrintDebugDump)
           throw ex
@@ -59,4 +56,3 @@ object StreamTestKit {
   }
 
 }
-

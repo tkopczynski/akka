@@ -9,9 +9,9 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-import akka.actor.{ Actor, ActorRef, Terminated }
+import akka.actor.{Actor, ActorRef, Terminated}
 import akka.annotation.InternalApi
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.{Publisher, Subscriber}
 import org.reactivestreams.Subscription
 
 /**
@@ -75,7 +75,7 @@ import org.reactivestreams.Subscription
   def shutdown(reason: Option[Throwable]): Unit = {
     shutdownReason = reason
     pendingSubscribers.getAndSet(null) match {
-      case null    => // already called earlier
+      case null => // already called earlier
       case pending => pending foreach reportSubscribeFailure
     }
   }
@@ -100,7 +100,9 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends Subscription {
+@InternalApi private[akka] class ActorSubscription[T](final val impl: ActorRef,
+                                                      final val subscriber: Subscriber[_ >: T])
+    extends Subscription {
   override def request(elements: Long): Unit = impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
 }
@@ -109,7 +111,8 @@ import org.reactivestreams.Subscription
  * INTERNAL API
  */
 @InternalApi private[akka] class ActorSubscriptionWithCursor[T](_impl: ActorRef, _subscriber: Subscriber[_ >: T])
-  extends ActorSubscription[T](_impl, _subscriber) with SubscriptionWithCursor[T]
+    extends ActorSubscription[T](_impl, _subscriber)
+    with SubscriptionWithCursor[T]
 
 /**
  * INTERNAL API
@@ -123,9 +126,8 @@ import org.reactivestreams.Subscription
       context.children foreach context.watch
       context.become {
         case Terminated(_) => if (context.children.isEmpty) context.stop(self)
-        case _             => // ignore all the rest, we’re practically dead
+        case _ => // ignore all the rest, we’re practically dead
       }
     }
   }
 }
-

@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import java.util.concurrent.{ Executor }
+import java.util.concurrent.{Executor}
 import java.util.ArrayDeque
 import scala.concurrent._
 import scala.annotation.tailrec
@@ -70,7 +70,8 @@ private[akka] trait BatchingExecutor extends Executor {
     override final def run: Unit = {
       require(_tasksLocal.get eq null)
       _tasksLocal set this // Install ourselves as the current batch
-      try processBatch(this) catch {
+      try processBatch(this)
+      catch {
         case t: Throwable =>
           resubmitUnbatched()
           throw t
@@ -88,7 +89,8 @@ private[akka] trait BatchingExecutor extends Executor {
       val firstInvocation = _blockContext.get eq null
       if (firstInvocation) _blockContext.set(BlockContext.current)
       BlockContext.withBlockContext(this) {
-        try processBatch(this) catch {
+        try processBatch(this)
+        catch {
           case t: Throwable =>
             resubmitUnbatched()
             throw t
@@ -125,8 +127,8 @@ private[akka] trait BatchingExecutor extends Executor {
 
   /** Override this to define which runnables will be batched. */
   def batchable(runnable: Runnable): Boolean = runnable match {
-    case b: Batchable                           => b.isBatchable
+    case b: Batchable => b.isBatchable
     case _: scala.concurrent.OnCompleteRunnable => true
-    case _                                      => false
+    case _ => false
   }
 }

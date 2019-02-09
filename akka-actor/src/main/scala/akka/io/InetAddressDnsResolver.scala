@@ -4,18 +4,18 @@
 
 package akka.io
 
-import java.net.{ InetAddress, UnknownHostException }
+import java.net.{InetAddress, UnknownHostException}
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
 import akka.io.dns.CachePolicy._
-import akka.actor.{ Actor, ActorLogging }
+import akka.actor.{Actor, ActorLogging}
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /** Respects the settings that can be set on the Java runtime via parameters. */
 class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with ActorLogging {
@@ -33,32 +33,36 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   private final val DefaultPositive = Ttl.fromPositive(30.seconds)
 
   private lazy val defaultCachePolicy: CachePolicy =
-    Option(Security.getProperty(CachePolicyProp)).filter(_ != "")
-      .orElse(Option(System.getProperty(CachePolicyPropFallback))).filter(_ != "")
+    Option(Security.getProperty(CachePolicyProp))
+      .filter(_ != "")
+      .orElse(Option(System.getProperty(CachePolicyPropFallback)))
+      .filter(_ != "")
       .map(x => Try(x.toInt)) match {
-        case None             => DefaultPositive
-        case Some(Success(n)) => parsePolicy(n)
-        case Some(Failure(_)) =>
-          log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
-          DefaultPositive
-      }
+      case None => DefaultPositive
+      case Some(Success(n)) => parsePolicy(n)
+      case Some(Failure(_)) =>
+        log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
+        DefaultPositive
+    }
 
   private lazy val defaultNegativeCachePolicy: CachePolicy =
-    Option(Security.getProperty(NegativeCachePolicyProp)).filter(_ != "")
-      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback))).filter(_ != "")
+    Option(Security.getProperty(NegativeCachePolicyProp))
+      .filter(_ != "")
+      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback)))
+      .filter(_ != "")
       .map(x => Try(x.toInt)) match {
-        case None             => Never
-        case Some(Success(n)) => parsePolicy(n)
-        case Some(Failure(_)) =>
-          log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
-          Never
-      }
+      case None => Never
+      case Some(Success(n)) => parsePolicy(n)
+      case Some(Failure(_)) =>
+        log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
+        Never
+    }
 
   private def parsePolicy(n: Int): CachePolicy = {
     n match {
-      case 0          => Never
+      case 0 => Never
       case x if x < 0 => Forever
-      case x          => Ttl.fromPositive(x.seconds)
+      case x => Ttl.fromPositive(x.seconds)
     }
   }
 
@@ -66,7 +70,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     config.getString(path) match {
       case "default" => if (positive) defaultCachePolicy else defaultNegativeCachePolicy
       case "forever" => Forever
-      case "never"   => Never
+      case "never" => Never
       case _ => {
         val finiteTtl = config
           .getDuration(path, TimeUnit.SECONDS)
@@ -84,8 +88,8 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   private def toLongTtl(cp: CachePolicy): Long = {
     cp match {
-      case Forever  => Long.MaxValue
-      case Never    => 0
+      case Forever => Long.MaxValue
+      case Never => 0
       case Ttl(ttl) => ttl.toMillis
     }
   }

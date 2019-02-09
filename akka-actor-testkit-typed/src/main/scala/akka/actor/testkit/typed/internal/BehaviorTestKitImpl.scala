@@ -7,9 +7,9 @@ package akka.actor.testkit.typed.internal
 import java.util
 
 import akka.actor.ActorPath
-import akka.actor.typed.{ ActorRef, Behavior, PostStop, Signal }
+import akka.actor.typed.{ActorRef, Behavior, PostStop, Signal}
 import akka.annotation.InternalApi
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.{CapturedLogEvent, Effect}
 import akka.actor.testkit.typed.Effect._
 
 import scala.annotation.tailrec
@@ -24,8 +24,8 @@ import scala.util.control.NonFatal
  */
 @InternalApi
 private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehavior: Behavior[T])
-  extends akka.actor.testkit.typed.javadsl.BehaviorTestKit[T]
-  with akka.actor.testkit.typed.scaladsl.BehaviorTestKit[T] {
+    extends akka.actor.testkit.typed.javadsl.BehaviorTestKit[T]
+    with akka.actor.testkit.typed.scaladsl.BehaviorTestKit[T] {
 
   // really this should be private, make so when we port out tests that need it
   private[akka] val context = new EffectfulActorContext[T](_path)
@@ -40,7 +40,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def retrieveEffect(): Effect = context.effectQueue.poll() match {
     case null => NoEffects
-    case x    => x
+    case x => x
   }
 
   override def childInbox[U](name: String): TestInboxImpl[U] = {
@@ -59,7 +59,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   override def retrieveAllEffects(): immutable.Seq[Effect] = {
     @tailrec def rec(acc: List[Effect]): List[Effect] = context.effectQueue.poll() match {
       case null => acc.reverse
-      case x    => rec(x :: acc)
+      case x => rec(x :: acc)
     }
 
     rec(Nil)
@@ -71,7 +71,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def expectEffect(expectedEffect: Effect): Unit = {
     context.effectQueue.poll() match {
-      case null   => assert(expectedEffect == NoEffects, s"expected: $expectedEffect but no effects were recorded")
+      case null => assert(expectedEffect == NoEffects, s"expected: $expectedEffect but no effects were recorded")
       case effect => assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
     }
   }
@@ -79,7 +79,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   def expectEffectClass[E <: Effect](effectClass: Class[E]): E = {
     context.effectQueue.poll() match {
       case null if effectClass.isAssignableFrom(NoEffects.getClass) => effectClass.cast(NoEffects)
-      case null => throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
+      case null =>
+        throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
       case effect if effectClass.isAssignableFrom(effect.getClass) => effect.asInstanceOf[E]
       case other => throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
     }
@@ -115,7 +116,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   private def runAllTasks(): Unit = {
     context.executionContext match {
       case controlled: ControlledExecutor => controlled.runAll()
-      case _                              =>
+      case _ =>
     }
   }
 

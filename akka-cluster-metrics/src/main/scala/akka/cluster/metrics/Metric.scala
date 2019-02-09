@@ -22,7 +22,7 @@ import scala.util.Try
  */
 @SerialVersionUID(1L)
 final case class Metric private[metrics] (name: String, value: Number, average: Option[EWMA])
-  extends MetricNumericConverter {
+    extends MetricNumericConverter {
 
   require(defined(value), s"Invalid Metric [$name] value [$value]")
 
@@ -32,18 +32,17 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
    */
   def :+(latest: Metric): Metric =
     if (this sameAs latest) average match {
-      case Some(avg)                        => copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
+      case Some(avg) => copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
       case None if latest.average.isDefined => copy(value = latest.value, average = latest.average)
-      case _                                => copy(value = latest.value)
-    }
-    else this
+      case _ => copy(value = latest.value)
+    } else this
 
   /**
    * The numerical value of the average, if defined, otherwise the latest value
    */
   def smoothValue: Double = average match {
     case Some(avg) => avg.value
-    case None      => value.doubleValue
+    case None => value.doubleValue
   }
 
   /**
@@ -59,7 +58,7 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
   override def hashCode = name.##
   override def equals(obj: Any) = obj match {
     case other: Metric => sameAs(other)
-    case _             => false
+    case _ => false
   }
 
 }
@@ -88,7 +87,7 @@ object Metric extends MetricNumericConverter {
 
   def createEWMA(value: Double, decayFactor: Option[Double]): Option[EWMA] = decayFactor match {
     case Some(alpha) => Some(EWMA(value, alpha))
-    case None        => None
+    case None => None
   }
 
 }
@@ -112,8 +111,10 @@ object StandardMetrics {
   // In latest Linux kernels: CpuCombined + CpuStolen + CpuIdle = 1.0  or 100%.
   /** Sum of User + Sys + Nice + Wait. See `org.hyperic.sigar.CpuPerc` */
   final val CpuCombined = "cpu-combined"
+
   /** The amount of CPU 'stolen' from this virtual machine by the hypervisor for other tasks (such as running another virtual machine). */
   final val CpuStolen = "cpu-stolen"
+
   /** Amount of CPU time left after combined and stolen are removed. */
   final val CpuIdle = "cpu-idle"
 
@@ -128,9 +129,12 @@ object StandardMetrics {
       for {
         used <- nodeMetrics.metric(HeapMemoryUsed)
         committed <- nodeMetrics.metric(HeapMemoryCommitted)
-      } yield (nodeMetrics.address, nodeMetrics.timestamp,
-        used.smoothValue.longValue, committed.smoothValue.longValue,
-        nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
+      } yield
+        (nodeMetrics.address,
+         nodeMetrics.timestamp,
+         used.smoothValue.longValue,
+         committed.smoothValue.longValue,
+         nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
     }
 
   }
@@ -172,14 +176,18 @@ object StandardMetrics {
      * necessary cpu metrics.
      * @return if possible a tuple matching the Cpu constructor parameters
      */
-    def unapply(nodeMetrics: NodeMetrics): Option[(Address, Long, Option[Double], Option[Double], Option[Double], Int)] = {
+    def unapply(
+        nodeMetrics: NodeMetrics
+    ): Option[(Address, Long, Option[Double], Option[Double], Option[Double], Int)] = {
       for {
         processors <- nodeMetrics.metric(Processors)
-      } yield (nodeMetrics.address, nodeMetrics.timestamp,
-        nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
-        nodeMetrics.metric(CpuCombined).map(_.smoothValue),
-        nodeMetrics.metric(CpuStolen).map(_.smoothValue),
-        processors.value.intValue)
+      } yield
+        (nodeMetrics.address,
+         nodeMetrics.timestamp,
+         nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
+         nodeMetrics.metric(CpuCombined).map(_.smoothValue),
+         nodeMetrics.metric(CpuStolen).map(_.smoothValue),
+         processors.value.intValue)
     }
 
   }
@@ -207,22 +215,21 @@ object StandardMetrics {
    * @param processors the number of available processors
    */
   @SerialVersionUID(1L)
-  final case class Cpu(
-    address:           Address,
-    timestamp:         Long,
-    systemLoadAverage: Option[Double],
-    cpuCombined:       Option[Double],
-    cpuStolen:         Option[Double],
-    processors:        Int) {
+  final case class Cpu(address: Address,
+                       timestamp: Long,
+                       systemLoadAverage: Option[Double],
+                       cpuCombined: Option[Double],
+                       cpuStolen: Option[Double],
+                       processors: Int) {
 
     cpuCombined match {
       case Some(x) => require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")
-      case None    =>
+      case None =>
     }
 
     cpuStolen match {
       case Some(x) => require(0.0 <= x && x <= 1.0, s"cpuStolen must be between [0.0 - 1.0], was [$x]")
-      case None    =>
+      case None =>
     }
 
   }
@@ -243,7 +250,7 @@ private[metrics] trait MetricNumericConverter {
    * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
   def defined(value: Number): Boolean = convertNumber(value) match {
-    case Left(a)  => a >= 0
+    case Left(a) => a >= 0
     case Right(b) => !(b < 0.0 || b.isNaN || b.isInfinite)
   }
 
@@ -251,13 +258,13 @@ private[metrics] trait MetricNumericConverter {
    * May involve rounding or truncation.
    */
   def convertNumber(from: Any): Either[Long, Double] = from match {
-    case n: Int        => Left(n)
-    case n: Long       => Left(n)
-    case n: Double     => Right(n)
-    case n: Float      => Right(n)
-    case n: BigInt     => Left(n.longValue)
+    case n: Int => Left(n)
+    case n: Long => Left(n)
+    case n: Double => Right(n)
+    case n: Float => Right(n)
+    case n: BigInt => Left(n.longValue)
     case n: BigDecimal => Right(n.doubleValue)
-    case x             => throw new IllegalArgumentException(s"Not a number [$x]")
+    case x => throw new IllegalArgumentException(s"Not a number [$x]")
   }
 
 }
@@ -298,7 +305,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
     val updated = for {
       latest <- latestNode.metrics
       current <- currentNode.metrics
-      if (latest sameAs current)
+      if latest sameAs current
     } yield {
       current :+ latest
     }
@@ -324,7 +331,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
   override def hashCode = address.##
   override def equals(obj: Any) = obj match {
     case other: NodeMetrics => sameAs(other)
-    case _                  => false
+    case _ => false
   }
 
 }
@@ -359,7 +366,9 @@ private[metrics] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
    * Adds new remote [[NodeMetrics]] and merges existing from a remote gossip.
    */
   def merge(otherGossip: MetricsGossip): MetricsGossip =
-    otherGossip.nodes.foldLeft(this) { (gossip, nodeMetrics) => gossip :+ nodeMetrics }
+    otherGossip.nodes.foldLeft(this) { (gossip, nodeMetrics) =>
+      gossip :+ nodeMetrics
+    }
 
   /**
    * Adds new local [[NodeMetrics]], or merges an existing.
@@ -373,6 +382,8 @@ private[metrics] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
   /**
    * Returns [[NodeMetrics]] for a node if exists.
    */
-  def nodeMetricsFor(address: Address): Option[NodeMetrics] = nodes find { n => n.address == address }
+  def nodeMetricsFor(address: Address): Option[NodeMetrics] = nodes find { n =>
+    n.address == address
+  }
 
 }

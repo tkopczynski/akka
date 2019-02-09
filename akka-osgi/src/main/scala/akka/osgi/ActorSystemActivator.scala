@@ -5,10 +5,10 @@
 package akka.osgi
 
 import akka.actor.ActorSystem
-import java.util.{ Dictionary, Properties }
+import java.util.{Dictionary, Properties}
 import org.osgi.framework._
 import org.osgi.service.log.LogService
-import com.typesafe.config.{ ConfigFactory, Config }
+import com.typesafe.config.{Config, ConfigFactory}
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an
@@ -40,7 +40,10 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the BundleContext
    */
   def start(context: BundleContext): Unit = {
-    system = Some(OsgiActorSystemFactory(context, getActorSystemConfiguration(context)).createActorSystem(Option(getActorSystemName(context))))
+    system = Some(
+      OsgiActorSystemFactory(context, getActorSystemConfiguration(context))
+        .createActorSystem(Option(getActorSystemName(context)))
+    )
     system foreach (addLogServiceListener(context, _))
     system foreach (configure(context, _))
   }
@@ -99,8 +102,9 @@ abstract class ActorSystemActivator extends BundleActivator {
     registration.foreach(_.unregister()) //Cleanup
     val properties = new Properties()
     properties.put("name", system.name)
-    registration = Some(context.registerService(classOf[ActorSystem].getName, system,
-      properties.asInstanceOf[Dictionary[String, Any]]))
+    registration = Some(
+      context.registerService(classOf[ActorSystem].getName, system, properties.asInstanceOf[Dictionary[String, Any]])
+    )
   }
 
   /**

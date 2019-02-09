@@ -4,10 +4,10 @@
 
 package akka.actor.typed.internal.adapter
 
-import akka.actor.typed.{ LogMarker, Logger }
+import akka.actor.typed.{LogMarker, Logger}
 import akka.annotation.InternalApi
 import akka.event.Logging._
-import akka.event.{ LoggingBus, LoggingFilter, LogMarker => UntypedLM }
+import akka.event.{LoggingBus, LoggingFilter, LogMarker => UntypedLM}
 import akka.util.OptionVal
 
 import scala.collection.JavaConverters._
@@ -85,8 +85,15 @@ private[akka] abstract class AbstractLogger extends Logger {
     if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3), OptionVal.Some(cause), OptionVal.Some(marker))
   }
 
-  override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
-    if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(cause), OptionVal.Some(marker))
+  override def error(marker: LogMarker,
+                     cause: Throwable,
+                     template: String,
+                     arg1: Any,
+                     arg2: Any,
+                     arg3: Any,
+                     arg4: Any): Unit = {
+    if (isErrorEnabled)
+      notifyError(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(cause), OptionVal.Some(marker))
   }
 
   override def error(marker: LogMarker, message: String): Unit = {
@@ -158,11 +165,19 @@ private[akka] abstract class AbstractLogger extends Logger {
   }
 
   override def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.Some(cause), OptionVal.Some(marker))
+    if (isWarningEnabled)
+      notifyWarning(format(template, arg1, arg2, arg3), OptionVal.Some(cause), OptionVal.Some(marker))
   }
 
-  override def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(cause), OptionVal.Some(marker))
+  override def warning(marker: LogMarker,
+                       cause: Throwable,
+                       template: String,
+                       arg1: Any,
+                       arg2: Any,
+                       arg3: Any,
+                       arg4: Any): Unit = {
+    if (isWarningEnabled)
+      notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(cause), OptionVal.Some(marker))
   }
 
   override def warning(marker: LogMarker, cause: Throwable, message: String): Unit = {
@@ -186,7 +201,8 @@ private[akka] abstract class AbstractLogger extends Logger {
   }
 
   override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.None, OptionVal.Some(marker))
+    if (isWarningEnabled)
+      notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.None, OptionVal.Some(marker))
   }
 
   override def info(message: String): Unit = {
@@ -305,16 +321,22 @@ private[akka] abstract class AbstractLogger extends Logger {
     if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3), OptionVal.Some(marker))
   }
 
-  override def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+  override def log(level: LogLevel,
+                   marker: LogMarker,
+                   template: String,
+                   arg1: Any,
+                   arg2: Any,
+                   arg3: Any,
+                   arg4: Any): Unit = {
     if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker))
   }
 
   protected def notify(level: LogLevel, message: String, marker: OptionVal[LogMarker]): Unit = level match {
-    case ErrorLevel   => notifyDebug(message, marker)
+    case ErrorLevel => notifyDebug(message, marker)
     case WarningLevel => notifyWarning(message, OptionVal.None, marker)
-    case InfoLevel    => notifyInfo(message, marker)
-    case DebugLevel   => notifyDebug(message, marker)
-    case _            => ()
+    case InfoLevel => notifyInfo(message, marker)
+    case DebugLevel => notifyDebug(message, marker)
+    case _ => ()
   }
 
   /**
@@ -328,7 +350,8 @@ private[akka] abstract class AbstractLogger extends Logger {
   }
   private def format(t: String, arg1: Any, arg2: Any): String = formatArray(t, arg1, arg2)
   private def format(t: String, arg1: Any, arg2: Any, arg3: Any): String = formatArray(t, arg1, arg2, arg3)
-  private def format(t: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): String = formatArray(t, arg1, arg2, arg3, arg4)
+  private def format(t: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): String =
+    formatArray(t, arg1, arg2, arg3, arg4)
 
   private def formatArray(t: String, arg: Any*): String = {
     val sb = new java.lang.StringBuilder(64)
@@ -358,7 +381,11 @@ private[akka] abstract class AbstractLogger extends Logger {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilter) extends AbstractLogger {
+private[akka] final class LoggerAdapterImpl(bus: LoggingBus,
+                                            logClass: Class[_],
+                                            logSource: String,
+                                            loggingFilter: LoggingFilter)
+    extends AbstractLogger {
 
   override def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource)
   override def isWarningEnabled = loggingFilter.isWarningEnabled(logClass, logSource)
@@ -376,12 +403,12 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
       case OptionVal.Some(cause) =>
         marker match {
           case OptionVal.Some(m) => Error(cause, logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-          case OptionVal.None    => Error(cause, logSource, logClass, message, mdc)
+          case OptionVal.None => Error(cause, logSource, logClass, message, mdc)
         }
       case OptionVal.None =>
         marker match {
           case OptionVal.Some(m) => Error(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-          case OptionVal.None    => Error(logSource, logClass, message, mdc)
+          case OptionVal.None => Error(logSource, logClass, message, mdc)
         }
     }
     bus.publish(error)
@@ -390,17 +417,18 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
   private[akka] def notifyWarning(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit = {
     val warning =
       if (cause.isDefined) Warning(cause.get, logSource, logClass, message, mdc, marker.orNull.asInstanceOf[UntypedLM])
-      else marker match {
-        case OptionVal.Some(m) => Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-        case OptionVal.None    => Warning(logSource, logClass, message, mdc)
-      }
+      else
+        marker match {
+          case OptionVal.Some(m) => Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+          case OptionVal.None => Warning(logSource, logClass, message, mdc)
+        }
     bus.publish(warning)
   }
 
   private[akka] def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit = {
     val info = marker match {
       case OptionVal.Some(m) => Info(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-      case OptionVal.None    => Info(logSource, logClass, message, mdc)
+      case OptionVal.None => Info(logSource, logClass, message, mdc)
     }
     bus.publish(info)
   }
@@ -408,10 +436,9 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
   private[akka] def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit = {
     val debug = marker match {
       case OptionVal.Some(m) => Debug(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-      case OptionVal.None    => Debug(logSource, logClass, message, mdc)
+      case OptionVal.None => Debug(logSource, logClass, message, mdc)
     }
     bus.publish(debug)
   }
 
 }
-

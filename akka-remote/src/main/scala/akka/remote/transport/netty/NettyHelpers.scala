@@ -31,8 +31,8 @@ private[netty] trait NettyHelpers {
     val cause = if (ev.getCause ne null) ev.getCause else new AkkaException("Unknown cause")
     cause match {
       case _: ClosedChannelException => // Ignore
-      case null | NonFatal(_)        => onException(ctx, ev)
-      case e: Throwable              => throw e // Rethrow fatals
+      case null | NonFatal(_) => onException(ctx, ev)
+      case e: Throwable => throw e // Rethrow fatals
     }
   }
 }
@@ -91,4 +91,3 @@ private[netty] trait NettyClientHelpers extends SimpleChannelHandler with NettyH
     onDisconnect(ctx, e)
   }
 }
-

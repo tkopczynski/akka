@@ -5,8 +5,8 @@
 package akka.remote
 
 import akka.actor._
-import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.sysmsg.{DeathWatchNotification, Watch}
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
 import scala.collection.mutable
@@ -22,13 +22,15 @@ private[akka] object RemoteWatcher {
   /**
    * Factory method for `RemoteWatcher` [[akka.actor.Props]].
    */
-  def props(
-    failureDetector:                FailureDetectorRegistry[Address],
-    heartbeatInterval:              FiniteDuration,
-    unreachableReaperInterval:      FiniteDuration,
-    heartbeatExpectedResponseAfter: FiniteDuration): Props =
-    Props(classOf[RemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+  def props(failureDetector: FailureDetectorRegistry[Address],
+            heartbeatInterval: FiniteDuration,
+            unreachableReaperInterval: FiniteDuration,
+            heartbeatExpectedResponseAfter: FiniteDuration): Props =
+    Props(classOf[RemoteWatcher],
+          failureDetector,
+          heartbeatInterval,
+          unreachableReaperInterval,
+          heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
 
   final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
@@ -50,9 +52,8 @@ private[akka] object RemoteWatcher {
     lazy val empty: Stats = counts(0, 0)
     def counts(watching: Int, watchingNodes: Int): Stats = Stats(watching, watchingNodes)(Set.empty, Set.empty)
   }
-  final case class Stats(watching: Int, watchingNodes: Int)(
-    val watchingRefs:      Set[(ActorRef, ActorRef)],
-    val watchingAddresses: Set[Address]) {
+  final case class Stats(watching: Int, watchingNodes: Int)(val watchingRefs: Set[(ActorRef, ActorRef)],
+                                                            val watchingAddresses: Set[Address]) {
     override def toString: String = {
       def formatWatchingRefs: String =
         watchingRefs.map(x => x._2.path.name + " -> " + x._1.path.name).mkString("[", ", ", "]")
@@ -84,12 +85,13 @@ private[akka] object RemoteWatcher {
  * both directions, but independent of each other.
  *
  */
-private[akka] class RemoteWatcher(
-  failureDetector:                FailureDetectorRegistry[Address],
-  heartbeatInterval:              FiniteDuration,
-  unreachableReaperInterval:      FiniteDuration,
-  heartbeatExpectedResponseAfter: FiniteDuration)
-  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[akka] class RemoteWatcher(failureDetector: FailureDetectorRegistry[Address],
+                                  heartbeatInterval: FiniteDuration,
+                                  unreachableReaperInterval: FiniteDuration,
+                                  heartbeatExpectedResponseAfter: FiniteDuration)
+    extends Actor
+    with ActorLogging
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import RemoteWatcher._
   import context.dispatcher
@@ -103,18 +105,20 @@ private[akka] class RemoteWatcher(
     else (Heartbeat, HeartbeatRsp(AddressUidExtension(context.system).addressUid))
 
   // actors that this node is watching, map of watchee -> Set(watchers)
-  val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]() with mutable.MultiMap[InternalActorRef, InternalActorRef]
+  val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
+  with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
-  val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]() with mutable.MultiMap[Address, InternalActorRef]
+  val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
+  with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet
 
   var unreachable: Set[Address] = Set.empty
   var addressUids: Map[Address, Long] = Map.empty
 
   val heartbeatTask = scheduler.schedule(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
-  val failureDetectorReaperTask = scheduler.schedule(unreachableReaperInterval, unreachableReaperInterval,
-    self, ReapUnreachableTick)
+  val failureDetectorReaperTask =
+    scheduler.schedule(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
 
   override def postStop(): Unit = {
     super.postStop()
@@ -123,22 +127,27 @@ private[akka] class RemoteWatcher(
   }
 
   def receive = {
-    case HeartbeatTick                             => sendHeartbeat()
-    case Heartbeat | ArteryHeartbeat               => receiveHeartbeat()
-    case HeartbeatRsp(uid)                         => receiveHeartbeatRsp(uid.toLong)
-    case ArteryHeartbeatRsp(uid)                   => receiveHeartbeatRsp(uid)
-    case ReapUnreachableTick                       => reapUnreachable()
-    case ExpectedFirstHeartbeat(from)              => triggerFirstHeartbeat(from)
-    case WatchRemote(watchee, watcher)             => addWatch(watchee, watcher)
-    case UnwatchRemote(watchee, watcher)           => removeWatch(watchee, watcher)
+    case HeartbeatTick => sendHeartbeat()
+    case Heartbeat | ArteryHeartbeat => receiveHeartbeat()
+    case HeartbeatRsp(uid) => receiveHeartbeatRsp(uid.toLong)
+    case ArteryHeartbeatRsp(uid) => receiveHeartbeatRsp(uid)
+    case ReapUnreachableTick => reapUnreachable()
+    case ExpectedFirstHeartbeat(from) => triggerFirstHeartbeat(from)
+    case WatchRemote(watchee, watcher) => addWatch(watchee, watcher)
+    case UnwatchRemote(watchee, watcher) => removeWatch(watchee, watcher)
     case t @ Terminated(watchee: InternalActorRef) => terminated(watchee, t.existenceConfirmed, t.addressTerminated)
 
     // test purpose
     case Stats =>
-      val watchSet = watching.iterator.flatMap { case (wee, wers) => wers.map { wer => wee -> wer } }.toSet[(ActorRef, ActorRef)]
-      sender() ! Stats(
-        watching = watchSet.size,
-        watchingNodes = watchingNodes.size)(watchSet, watchingNodes.toSet)
+      val watchSet = watching.iterator
+        .flatMap {
+          case (wee, wers) =>
+            wers.map { wer =>
+              wee -> wer
+            }
+        }
+        .toSet[(ActorRef, ActorRef)]
+      sender() ! Stats(watching = watchSet.size, watchingNodes = watchingNodes.size)(watchSet, watchingNodes.toSet)
   }
 
   def receiveHeartbeat(): Unit =
@@ -176,7 +185,7 @@ private[akka] class RemoteWatcher(
   def quarantine(address: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     remoteProvider.transport match {
       case t: ArteryTransport if harmless => t.quarantine(address, uid, reason, harmless)
-      case _                              => remoteProvider.quarantine(address, uid, reason)
+      case _ => remoteProvider.quarantine(address, uid, reason)
     }
   }
 

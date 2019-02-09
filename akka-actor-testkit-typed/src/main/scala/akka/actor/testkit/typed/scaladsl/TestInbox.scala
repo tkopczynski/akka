@@ -4,9 +4,9 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.{ Address, RootActorPath }
+import akka.actor.{Address, RootActorPath}
 import akka.actor.typed.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.{ApiMayChange, DoNotInherit}
 import akka.actor.testkit.typed.internal.TestInboxImpl
 
 import java.util.concurrent.ThreadLocalRandom
@@ -36,6 +36,7 @@ object TestInbox {
  */
 @DoNotInherit
 trait TestInbox[T] {
+
   /**
    * The actor ref of the inbox
    */

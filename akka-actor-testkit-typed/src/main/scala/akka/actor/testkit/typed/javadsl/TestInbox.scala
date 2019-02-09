@@ -39,6 +39,7 @@ object TestInbox {
  */
 @DoNotInherit
 abstract class TestInbox[T] {
+
   /**
    * The actor ref of the inbox
    */

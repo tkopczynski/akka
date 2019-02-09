@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
+import java.lang.reflect.{Modifier, ParameterizedType, TypeVariable}
 import akka.japi.Creator
 import akka.util.Reflect
 import scala.annotation.varargs
@@ -28,7 +28,8 @@ private[akka] trait AbstractProps {
    * Java API: create a Props given a class and its constructor arguments.
    */
   @varargs
-  def create(clazz: Class[_], args: AnyRef*): Props = new Props(deploy = Props.defaultDeploy, clazz = clazz, args = args.toList)
+  def create(clazz: Class[_], args: AnyRef*): Props =
+    new Props(deploy = Props.defaultDeploy, clazz = clazz, args = args.toList)
 
   /**
    * Create new Props from the given [[akka.japi.Creator]].
@@ -54,7 +55,9 @@ private[akka] trait AbstractProps {
           case x => throw new IllegalArgumentException(s"unsupported type found in Creator argument [$x]")
         }
       case c: Class[_] if (c == coc) =>
-        throw new IllegalArgumentException("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead")
+        throw new IllegalArgumentException(
+          "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead"
+        )
     }
     create(classOf[CreatorConsumer], actorClass, creator)
   }
@@ -110,6 +113,7 @@ private[akka] trait AbstractProps {
 
     if ((enclosingClass ne null) && !hasValidConstructor)
       throw new IllegalArgumentException(
-        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level"
+      )
   }
 }

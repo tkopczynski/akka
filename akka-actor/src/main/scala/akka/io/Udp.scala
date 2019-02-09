@@ -8,7 +8,7 @@ import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import com.typesafe.config.Config
 import scala.collection.immutable
-import akka.io.Inet.{ SoJavaFactories, SocketOption }
+import akka.io.Inet.{SoJavaFactories, SocketOption}
 import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._
@@ -94,10 +94,10 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * The listener actor for the newly bound port will reply with a [[Bound]]
    * message, or the manager will reply with a [[CommandFailed]] message.
    */
-  final case class Bind(
-    handler:      ActorRef,
-    localAddress: InetSocketAddress,
-    options:      immutable.Traversable[SocketOption] = Nil) extends Command
+  final case class Bind(handler: ActorRef,
+                        localAddress: InetSocketAddress,
+                        options: immutable.Traversable[SocketOption] = Nil)
+      extends Command
 
   /**
    * Send this message to the listener actor that previously sent a [[Bound]]
@@ -215,9 +215,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"))
 
   val manager: ActorRef = {
-    system.systemActorOf(
-      props = Props(classOf[UdpManager], this).withDeploy(Deploy.local),
-      name = "IO-UDP-FF")
+    system.systemActorOf(props = Props(classOf[UdpManager], this).withDeploy(Deploy.local), name = "IO-UDP-FF")
   }
 
   /**
@@ -228,7 +226,8 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   /**
    * INTERNAL API
    */
-  private[io] val bufferPool: BufferPool = new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
+  private[io] val bufferPool: BufferPool =
+    new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
 }
 
 /**
@@ -236,7 +235,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
  */
 object UdpMessage {
   import Udp._
-  import java.lang.{ Iterable => JIterable }
+  import java.lang.{Iterable => JIterable}
   import scala.collection.JavaConverters._
 
   /**
@@ -246,6 +245,7 @@ object UdpMessage {
    * to recognize which write failed when receiving a [[Udp.CommandFailed]] message.
    */
   def noAck(token: AnyRef): NoAck = NoAck(token)
+
   /**
    * Default [[Udp.NoAck]] instance which is used when no acknowledgment information is
    * explicitly provided. Its “token” is `null`.
@@ -269,6 +269,7 @@ object UdpMessage {
    * [[Udp.Bind]] in that case.
    */
   def send(payload: ByteString, target: InetSocketAddress, ack: Event): Command = Send(payload, target, ack)
+
   /**
    * The same as `send(payload, target, noAck())`.
    */
@@ -282,6 +283,7 @@ object UdpMessage {
    */
   def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Command =
     Bind(handler, endpoint, options.asScala.to(immutable.IndexedSeq))
+
   /**
    * Bind without specifying options.
    */
@@ -305,6 +307,7 @@ object UdpMessage {
    * when you want to close the socket.
    */
   def simpleSender(options: JIterable[SocketOption]): Command = SimpleSender(options.asScala.to(immutable.IndexedSeq))
+
   /**
    * Retrieve a simple sender without specifying options.
    */

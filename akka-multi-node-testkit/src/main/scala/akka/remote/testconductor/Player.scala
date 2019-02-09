@@ -8,17 +8,25 @@ import java.util.concurrent.TimeoutException
 import akka.actor._
 import akka.remote.testconductor.RemoteConnection.getAddrString
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.reflect.classTag
 import akka.util.Timeout
-import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
-import akka.pattern.{ ask, AskTimeoutException }
-import akka.event.{ LoggingAdapter, Logging }
-import java.net.{ InetSocketAddress, ConnectException }
-import akka.remote.transport.ThrottlerTransportAdapter.{ SetThrottle, TokenBucket, Blackhole, Unthrottled }
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import org.jboss.netty.channel.{
+  Channel,
+  ChannelHandlerContext,
+  ChannelStateEvent,
+  ExceptionEvent,
+  MessageEvent,
+  SimpleChannelUpstreamHandler,
+  WriteCompletionEvent
+}
+import akka.pattern.{ask, AskTimeoutException}
+import akka.event.{Logging, LoggingAdapter}
+import java.net.{ConnectException, InetSocketAddress}
+import akka.remote.transport.ThrottlerTransportAdapter.{Blackhole, SetThrottle, TokenBucket, Unthrottled}
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 import akka.util.ccompat._
 
 object Player {
@@ -34,7 +42,8 @@ object Player {
       case fsm: ActorRef =>
         waiting = sender(); fsm ! SubscribeTransitionCallBack(self)
       case Transition(_, f: ClientFSM.State, t: ClientFSM.State) if f == Connecting && t == AwaitDone => // step 1, not there yet // // SI-5900 workaround
-      case Transition(_, f: ClientFSM.State, t: ClientFSM.State) if f == AwaitDone && t == Connected => // SI-5900 workaround
+      case Transition(_, f: ClientFSM.State, t: ClientFSM.State)
+          if f == AwaitDone && t == Connected => // SI-5900 workaround
         waiting ! Done; context stop self
       case t: Transition[_] =>
         waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t)); context stop self
@@ -61,7 +70,9 @@ trait Player { this: TestConductorExt =>
     case null =>
       throw new IllegalStateException("TestConductor client not yet started")
     case _ if system.whenTerminated.isCompleted =>
-      throw new IllegalStateException("TestConductor unavailable because system is terminated; you need to startNewSystem() before this point")
+      throw new IllegalStateException(
+        "TestConductor unavailable because system is terminated; you need to startNewSystem() before this point"
+      )
     case x => x
   }
 
@@ -154,15 +165,23 @@ private[akka] object ClientFSM {
  *
  * INTERNAL API.
  */
-private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor
-  with LoggingFSM[ClientFSM.State, ClientFSM.Data] with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
+    extends Actor
+    with LoggingFSM[ClientFSM.State, ClientFSM.Data]
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ClientFSM._
 
   val settings = TestConductor().Settings
 
-  val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
-    settings.ClientSocketWorkerPoolSize, self, Logging(context.system, classOf[PlayerHandler].getName),
-    context.system.scheduler)(context.dispatcher)
+  val handler = new PlayerHandler(
+    controllerAddr,
+    settings.ClientReconnects,
+    settings.ReconnectBackoff,
+    settings.ClientSocketWorkerPoolSize,
+    self,
+    Logging(context.system, classOf[PlayerHandler].getName),
+    context.system.scheduler
+  )(context.dispatcher)
 
   startWith(Connecting, Data(None, None))
 
@@ -205,8 +224,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       channel.write(msg)
       val token = msg match {
         case EnterBarrier(barrier, timeout) => Some(barrier -> sender())
-        case GetAddress(node)               => Some(node.name -> sender())
-        case _                              => None
+        case GetAddress(node) => Some(node.name -> sender())
+        case _ => None
       }
       stay using d.copy(runningOp = token)
     case Event(ToServer(op), Data(channel, Some((token, _)))) =>
@@ -218,7 +237,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           runningOp match {
             case Some((barrier, requester)) =>
               val response =
-                if (b != barrier) Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
+                if (b != barrier)
+                  Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
                 else if (!success) Status.Failure(new RuntimeException("barrier failed: " + b))
                 else b
               requester ! response
@@ -229,23 +249,31 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case AddressReply(node, address) =>
           runningOp match {
             case Some((_, requester)) => requester ! address
-            case None                 => log.warning("did not expect {}", op)
+            case None => log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case t: ThrottleMsg =>
           import context.dispatcher // FIXME is this the right EC for the future below?
-          val mode = if (t.rateMBit < 0.0f) Unthrottled
-          else if (t.rateMBit == 0.0f) Blackhole
-          // Conversion needed as the TokenBucket measures in octets: 125000 Octets/s = 1Mbit/s
-          // FIXME: Initial capacity should be carefully chosen
-          else TokenBucket(capacity = 1000, tokensPerSecond = t.rateMBit * 125000.0, nanoTimeOfLastSend = 0, availableTokens = 0)
+          val mode =
+            if (t.rateMBit < 0.0f) Unthrottled
+            else if (t.rateMBit == 0.0f) Blackhole
+            // Conversion needed as the TokenBucket measures in octets: 125000 Octets/s = 1Mbit/s
+            // FIXME: Initial capacity should be carefully chosen
+            else
+              TokenBucket(capacity = 1000,
+                          tokensPerSecond = t.rateMBit * 125000.0,
+                          nanoTimeOfLastSend = 0,
+                          availableTokens = 0)
 
           val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
 
           cmdFuture foreach {
             case true => self ! ToServer(Done)
-            case _ => throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
-              "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
+            case _ =>
+              throw new RuntimeException(
+                "Throttle was requested from the TestConductor, but no transport " +
+                "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig"
+              )
           }
           stay
         case d: DisconnectMsg =>
@@ -285,15 +313,14 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
  *
  * INTERNAL API.
  */
-private[akka] class PlayerHandler(
-  server:                 InetSocketAddress,
-  private var reconnects: Int,
-  backoff:                FiniteDuration,
-  poolSize:               Int,
-  fsm:                    ActorRef,
-  log:                    LoggingAdapter,
-  scheduler:              Scheduler)(implicit executor: ExecutionContext)
-  extends SimpleChannelUpstreamHandler {
+private[akka] class PlayerHandler(server: InetSocketAddress,
+                                  private var reconnects: Int,
+                                  backoff: FiniteDuration,
+                                  poolSize: Int,
+                                  fsm: ActorRef,
+                                  log: LoggingAdapter,
+                                  scheduler: Scheduler)(implicit executor: ExecutionContext)
+    extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._
 
@@ -301,11 +328,16 @@ private[akka] class PlayerHandler(
 
   var nextAttempt: Deadline = _
 
-  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} open", event.getChannel)
-  override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} closed", event.getChannel)
-  override def channelBound(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} bound", event.getChannel)
-  override def channelUnbound(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} unbound", event.getChannel)
-  override def writeComplete(ctx: ChannelHandlerContext, event: WriteCompletionEvent) = log.debug("channel {} written {}", event.getChannel, event.getWrittenAmount)
+  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) =
+    log.debug("channel {} open", event.getChannel)
+  override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) =
+    log.debug("channel {} closed", event.getChannel)
+  override def channelBound(ctx: ChannelHandlerContext, event: ChannelStateEvent) =
+    log.debug("channel {} bound", event.getChannel)
+  override def channelUnbound(ctx: ChannelHandlerContext, event: ChannelStateEvent) =
+    log.debug("channel {} unbound", event.getChannel)
+  override def writeComplete(ctx: ChannelHandlerContext, event: WriteCompletionEvent) =
+    log.debug("channel {} written {}", event.getChannel, event.getWrittenAmount)
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     log.debug("channel {} exception {}", event.getChannel, event.getCause)
@@ -347,4 +379,3 @@ private[akka] class PlayerHandler(
     }
   }
 }
-

@@ -5,8 +5,8 @@
 package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
-import akka.japi.function.{ Creator, Function, Predicate }
-import akka.actor.typed.{ Behavior, Signal }
+import akka.japi.function.{Creator, Function, Predicate}
+import akka.actor.typed.{Behavior, Signal}
 import akka.annotation.InternalApi
 
 /**
@@ -18,8 +18,8 @@ import akka.annotation.InternalApi
  * @tparam T the common superclass of all supported messages.
  */
 class ReceiveBuilder[T] private (
-  private val messageHandlers: List[ReceiveBuilder.Case[T, T]],
-  private val signalHandlers:  List[ReceiveBuilder.Case[T, Signal]]
+    private val messageHandlers: List[ReceiveBuilder.Case[T, T]],
+    private val signalHandlers: List[ReceiveBuilder.Case[T, Signal]]
 ) {
 
   import ReceiveBuilder.Case
@@ -96,7 +96,9 @@ class ReceiveBuilder[T] private (
    * @tparam M type of signal to match
    * @return a new behavior with the specified handling appended
    */
-  def onSignal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onSignal[M <: Signal](`type`: Class[M],
+                            test: Predicate[M],
+                            handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(
       `type`,
       Some((t: Signal) => test.test(t.asInstanceOf[M])),
@@ -126,10 +128,14 @@ class ReceiveBuilder[T] private (
   def onSignalEquals(signal: Signal, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
     withSignal(signal.getClass, Some(_.equals(signal)), _ => handler.create())
 
-  private def withMessage(`type`: Class[_ <: T], test: Option[T => Boolean], handler: T => Behavior[T]): ReceiveBuilder[T] =
+  private def withMessage(`type`: Class[_ <: T],
+                          test: Option[T => Boolean],
+                          handler: T => Behavior[T]): ReceiveBuilder[T] =
     new ReceiveBuilder[T](Case[T, T](`type`, test, handler) +: messageHandlers, signalHandlers)
 
-  private def withSignal[M <: Signal](`type`: Class[M], test: Option[Signal => Boolean], handler: Signal => Behavior[T]): ReceiveBuilder[T] =
+  private def withSignal[M <: Signal](`type`: Class[M],
+                                      test: Option[Signal => Boolean],
+                                      handler: Signal => Behavior[T]): ReceiveBuilder[T] =
     new ReceiveBuilder[T](messageHandlers, Case[T, Signal](`type`, test, handler) +: signalHandlers)
 }
 
@@ -138,7 +144,9 @@ object ReceiveBuilder {
 
   /** INTERNAL API */
   @InternalApi
-  private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT], test: Option[MT => Boolean], handler: MT => Behavior[BT])
+  private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT],
+                                                 test: Option[MT => Boolean],
+                                                 handler: MT => Behavior[BT])
 
 }
 
@@ -146,8 +154,8 @@ object ReceiveBuilder {
  * Receive type for [[AbstractBehavior]]
  */
 private final class BuiltReceive[T](
-  private val messageHandlers: List[ReceiveBuilder.Case[T, T]],
-  private val signalHandlers:  List[ReceiveBuilder.Case[T, Signal]]
+    private val messageHandlers: List[ReceiveBuilder.Case[T, T]],
+    private val signalHandlers: List[ReceiveBuilder.Case[T, Signal]]
 ) extends Receive[T] {
   import ReceiveBuilder.Case
 

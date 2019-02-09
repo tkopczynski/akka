@@ -4,12 +4,12 @@
 
 package akka.io
 
-import java.net.{ ConnectException, InetSocketAddress }
-import java.nio.channels.{ SelectionKey, SocketChannel }
+import java.net.{ConnectException, InetSocketAddress}
+import java.nio.channels.{SelectionKey, SocketChannel}
 
-import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.{NoStackTrace, NonFatal}
 import scala.concurrent.duration._
-import akka.actor.{ ActorRef, ReceiveTimeout }
+import akka.actor.{ActorRef, ReceiveTimeout}
 import akka.annotation.InternalApi
 import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
@@ -21,12 +21,13 @@ import akka.io.Tcp._
  *
  * INTERNAL API
  */
-private[io] class TcpOutgoingConnection(
-  _tcp:            TcpExt,
-  channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  connect:         Connect)
-  extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel], connect.pullMode) {
+private[io] class TcpOutgoingConnection(_tcp: TcpExt,
+                                        channelRegistry: ChannelRegistry,
+                                        commander: ActorRef,
+                                        connect: Connect)
+    extends TcpConnection(_tcp,
+                          SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel],
+                          connect.pullMode) {
 
   import TcpOutgoingConnection._
   import context._
@@ -108,8 +109,10 @@ private[io] class TcpOutgoingConnection(
               }(context.dispatcher)
               context.become(connecting(registration, remainingFinishConnectRetries - 1))
             } else {
-              log.debug("Could not establish connection because finishConnect " +
-                "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
+              log.debug(
+                "Could not establish connection because finishConnect " +
+                "never returned true (consider increasing akka.io.tcp.finish-connect-retries)"
+              )
               stop(FinishConnectNeverReturnedTrueException)
             }
           }

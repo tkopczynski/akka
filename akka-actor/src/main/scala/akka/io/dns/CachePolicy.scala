@@ -6,7 +6,7 @@ package akka.io.dns
 
 import akka.util.JavaDurationConverters._
 
-import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
+import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
 object CachePolicy {
 
@@ -21,7 +21,7 @@ object CachePolicy {
 
     override def equals(other: Any): Boolean = other match {
       case that: Ttl => value == that.value
-      case _         => false
+      case _ => false
     }
 
     override def hashCode(): Int = value.hashCode()

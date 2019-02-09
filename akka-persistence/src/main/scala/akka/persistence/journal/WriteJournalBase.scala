@@ -5,7 +5,7 @@
 package akka.persistence.journal
 
 import akka.actor.Actor
-import akka.persistence.{ Persistence, PersistentEnvelope, PersistentRepr }
+import akka.persistence.{Persistence, PersistentEnvelope, PersistentRepr}
 import scala.collection.immutable
 import akka.persistence.AtomicWrite
 

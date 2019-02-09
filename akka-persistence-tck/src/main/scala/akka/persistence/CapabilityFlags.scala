@@ -55,6 +55,7 @@ trait JournalCapabilityFlags extends CapabilityFlags {
 
 //#snapshot-store-flags
 trait SnapshotStoreCapabilityFlags extends CapabilityFlags {
+
   /**
    * When `true` enables tests which check if the snapshot store properly serialize and
    * deserialize snapshots.
